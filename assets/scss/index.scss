@@ -1,0 +1,76 @@
+@import url(//spoqa.github.io/spoqa-han-sans/css/SpoqaHanSansNeo.css);
+
+html, body {
+	margin: 0;
+	padding: 0 !important;
+	* {
+		box-sizing: border-box;
+		background-repeat: no-repeat;
+		background-position: center;
+		font-family: 'Spoqa Han Sans Neo', 'sans-serif';
+		&:focus {
+			outline: 0;
+		}
+	}
+}
+
+a {
+	padding: 0 0;
+	margin: 0 0;
+	text-decoration: none;
+	color: white;
+}
+p, b, h1, h2, h3, h4, h5, h6, ol, ul, li {
+	list-style-type: none;
+	margin: 0 0;
+	padding: 0 0;
+}
+button {
+	border: 0;
+	background-color: unset;
+}
+
+:root {
+	--active: #3EB4EB;
+	--change_active: brightness(0) saturate(100%) invert(60%) sepia(72%) saturate(910%) hue-rotate(168deg) brightness(96%) contrast(91%);
+	--sub: #ECF7FD;
+	--bg: #F7FCFF;
+	--blue: #4388F0;
+	--green: #0FB92A;
+	--red: #FB5561;
+	--gray800: #1B1B1C;
+	--gray700: #353637;
+	--gray600: #575758;
+	--gray500: #777879;
+	--gray400: #9D9FA0;
+	--gray300: #B3B4B6;
+	--gray200: #D3D4D8;
+	--gray100: #E9E9EC;
+	--gray50: #EFF0F3;
+	--gray30: #FAFAFA;
+	--change_gray200: brightness(0) saturate(100%) invert(100%) sepia(1%) saturate(7282%) hue-rotate(178deg) brightness(88%) contrast(92%);
+	--s36: 2.25rem;
+	--s22: 1.375rem;
+	--s20: 1.25rem;
+	--s18: 1.125rem;
+	--s16: 1rem;
+	--s14: 0.875rem;
+	--s12: 0.75rem;
+	--s10: 0.675rem;
+}
+
+.red {
+	color: var(--red)
+}
+.blue {
+	color: var(--active)
+}
+.green {
+	color: var(--green)
+}
+
+.field {
+	~ .common-list.radio {
+		margin-top: 14px;
+	}
+}

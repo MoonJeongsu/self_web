@@ -1,0 +1,304 @@
+<template>
+	<Container
+		pageTitle="마이페이지"
+		class="setting"
+		noPadding
+	>
+		<div class="box">
+			<h6 class="title">주 사용자</h6>
+			<div class="profile">
+				<div class="img-box">
+					<img :src="user.gender === 'woman' ? iconWoman : iconMan">
+				</div>
+				<div class="txt-box">
+					<b>{{ user.name }}</b>
+					<p>{{ user.address }}</p>
+					<p>{{ user.birthDate }}</p>
+				</div>
+			</div>
+			<h6 class="title">동거인</h6>
+			<CommonButton
+				color="outline-black"
+				text="동거인 추가"
+				:icon="iconPlus"
+				@click="isShowAddMember = true"
+				:disabled="members.length > 5"
+			/>
+			<CommonList
+				:list="members"
+				noContentTxt="등록된 동거인이 없습니다.<br>상단 버튼을 터치하여 등록해 주세요."
+			/>
+		</div>
+		<div class="box">
+			<h6 class="title">알림설정</h6>
+			<CommonList
+				:list="[{ title: '진단 알림<span>매일 12시 미진단시 알람을 보내드립니다.</span>' }]"
+			>
+				<FormSwitch v-model="isNotice" />
+			</CommonList>
+		</div>
+		<div class="box">
+			<h6 class="title">도움</h6>
+			<CommonList
+				:list="[
+					{ title: '공지사항', key: 'notice' },
+					{ title: '앱 이용 안내', key: 'guide' },
+					{ title: 'FAQ', key: 'faq' }
+				]"
+				@click="goPage"
+			/>
+		</div>
+		<div class="box">
+			<h6 class="title">계정</h6>
+			<CommonList
+				:list="account"
+				@click="showLogout"
+			/>
+		</div>
+		<ModalOffcanvas
+			:title="`동거인 등록<span>${members.length}명 이용중</span>`"
+			isBottom
+			id="add-member"
+			:show="isShowAddMember"
+			@hide="isShowAddMember = false"
+		>
+			<div class="forms">
+				<FormInput
+					title="성명"
+					v-model="forms.name"
+					placeholder="성명을 적어주세요."
+				/>
+				<FormInput
+					title="생년월일"
+					v-model="forms.birthDate"
+				/>
+				<CommonList
+					type="radio"
+					:list="state.genders"
+					:active="forms.gender"
+					@click="(key: string) => forms.gender = key"
+				/>
+				<CommonButton
+					text="등록"
+					@click="addMember"
+				/>
+			</div>
+		</ModalOffcanvas>
+		<Modal
+			title="로그아웃 하시나요?"
+			desc="현재 계정에서 로그아웃합니다."
+			cancelBtnTxt="취소"
+			submitBtnTxt="로그아웃"
+			:show="isShowModalLogout"
+			@cancel="hideModalLogout"
+			@submit="logout"
+		/>
+	</Container>
+</template>
+
+<script setup lang="ts">
+import dayjs from 'dayjs'
+import { memberApi } from '~/composables/api/member'
+import {noticeApi} from '~/composables/api/notice'
+definePageMeta({
+	layout: 'page',
+})
+
+import iconPlus from '@/assets/img/ic_plus.svg'
+import iconWoman from '@/assets/img/ic_woman.svg'
+import iconMan from '@/assets/img/ic_man.svg'
+import { mainApi } from '~/composables/api/main'
+
+const state = ref({
+	genders: [
+		{ title: '남', key: 'M' },
+		{ title: '여', key: 'F' }
+	]
+})
+
+// 프로필
+const user = ref({
+	id: '',
+	login_id: '',
+	name: '',
+	gender: '',
+	birthDate: '',
+	address: '',
+	address_detail: '',
+	alarm: 'Y'
+})
+//계정 리스트
+const account = ref([
+	{
+		title: '로그아웃',
+		desc: '',
+		key: 'logout'
+	}
+])
+
+// 거주 구성원
+const members = ref([])
+//구성원 추가 모달
+const isShowAddMember = ref(false);
+
+// 알림 설정
+const isNotice = ref(true)
+
+// forms
+const forms = ref({
+	name: '',
+	birthDate: '',
+	gender: '',
+})
+
+// 모달 : 로그아웃
+const isShowModalLogout = ref(false)
+
+onMounted(async () => {
+	await getProfile()
+	await getMembers()
+})
+
+watch(() => isNotice.value, (val) => {
+	changeAlarm()
+})
+
+function showLogout(): void {
+	isShowModalLogout.value = true;
+}
+function hideModalLogout(): void {
+	isShowModalLogout.value = false;
+}
+
+// 도움 내 클릭 이벤트 - 페이지 이동
+function goPage(type: string): void {
+	if (type === 'guide') {
+		navigateTo('/guide');
+	}
+}
+
+//프로필 조회
+async function getProfile() {
+	const res = await mainApi.getProfile()
+
+	if(res) {
+		user.value = res.userInfo;
+		user.value.birthDate = dayjs(res.userInfo.birth_date).format('YYYYMMDD');
+		isNotice.value = user.value.alarm === 'Y' ? true : false
+		account.value = [
+			{ 
+				title: '로그아웃', 
+				desc: user.value?.login_id, 
+				key: 'logout' 
+			}
+		]
+	}
+}
+
+//동거인 조회
+async function getMembers() {
+	const res = await memberApi.getMembers();
+	if (res?.list) {
+		members.value = res.list
+			.filter(el => el.name !== user.value.name)
+			.map(el => {
+				el.title = el.name;
+				el.desc = dayjs(el.birthDate).format('YYYYMMDD');
+				el.img = el.gender === 'M' ? iconMan : iconWoman;
+				return el;
+			});
+	}
+}
+
+// 동거인 등록: addMember 함수
+async function addMember() {
+	// forms.value를 사용하여 값 접근
+	const res = await memberApi.addMembers(forms.value);
+	if(res) {
+		await getMembers();
+		// 초기화
+		forms.value = {
+			name: '',
+			birthDate: '',
+			gender: '',
+		};
+		isShowAddMember.value = false;
+	}
+}
+
+//알람 설정
+async function changeAlarm() {
+	const alarm = isNotice.value === true ? 'Y' : 'N'
+	const res = await noticeApi.changeAlarm(alarm)
+}
+
+//로그아웃
+async function logout() {
+	// 쿠키 초기화
+	const accessToken = useCookie('accessToken')
+	const userInfo = useCookie('userInfo')
+
+	accessToken.value = null
+	userInfo.value = null
+
+	localStorage.setItem('accessToken', '')
+
+	// 페이지 이동
+	await navigateTo('/login')
+}
+</script>
+
+<style lang="scss" scoped>
+    .setting {
+        h6.title {
+            font-size: var(--s16);
+            font-weight: 500;
+            color: var(--gray700);
+            margin-bottom: 12px;
+        }
+        .profile {
+            width: 100%;
+            border: 1px solid var(--gray100);
+            border-radius: 2px;
+            padding: 16px;
+            display: flex;
+            margin-bottom: 16px;
+            .img-box {
+                min-width: 64px;
+                height: 64px;
+                background-color: var(--sub);
+                border-radius: 36px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                img {
+                    width: 36px;
+                }
+            }
+            .txt-box {
+                margin-left: 15px;
+                b {
+                    font-size: var(--s14);
+                    font-weight: 500;
+                    color: var(--gray700);
+                }
+                p {
+                    font-size: var(--s14);
+                    font-weight: 400;
+                    color: var(--gray600);
+                }
+            }
+        }
+        .box {
+            background-color: white;
+            position: relative;
+            padding: 20px;
+            ~ .box {
+                margin-top: 8px;
+            }
+            .common-list {
+                margin-top: 15px;
+            }
+        }
+    }
+</style>
