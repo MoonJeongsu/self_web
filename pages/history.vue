@@ -209,7 +209,8 @@ async function getMembers() {
 async function getHistory(memberId: string) {
 	const { startDate, endDate } = getMonthRange(selectMonth.value)
 	const res = await selfTestApi.getSelfTest({ memberId, startDate, endDate })
-	if (res) allHistoryList.value = mapSelfTestDataToHistoryItems(res.data)
+	const historyData = (res as { data?: Record<string, unknown[]> })?.data ?? res
+	if (historyData) allHistoryList.value = mapSelfTestDataToHistoryItems(historyData as Record<string, { testResult: string }[]>)
 }
 
 // 이벤트 핸들러

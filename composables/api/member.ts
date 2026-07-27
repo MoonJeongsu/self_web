@@ -1,5 +1,6 @@
 import { useApi } from "../useApi";
 import type { MemberInfoType } from "~/types";
+import { unwrapApiData } from "~/utils/apiResponse";
 
 //동거인
 export namespace memberApi {
@@ -7,12 +8,11 @@ export namespace memberApi {
 	export async function getMembers(date?: string) {
 		const { data, error } = await useApi('/v1/user/member/list', {
 			method: 'GET',
-			params: {
-				date: date
-			}
+			params: date ? { date } : undefined,
 		});
 		if (error) throw error;
-		return data;
+		const unwrapped = unwrapApiData<{ list: MemberInfoType[] }>(data)
+		return unwrapped ?? data;
 	}
 	//동거인 등록
 	export async function addMembers(body: MemberInfoType) {

@@ -12,7 +12,8 @@
 				</div>
 				<div class="txt-box">
 					<b>{{ user.name }}</b>
-					<p>{{ user.address }}</p>
+					<p v-if="profileWorkplace">{{ profileWorkplace }}</p>
+					<p v-if="profileWorkType">{{ profileWorkType }}</p>
 					<p>{{ user.birthDate }}</p>
 				</div>
 			</div>
@@ -62,22 +63,44 @@
 			:show="isShowAddMember"
 			@hide="isShowAddMember = false"
 		>
+			<div class="notice-box">보건관리자를 통한 확인 필요</div>
 			<div class="forms">
 				<FormInput
 					title="성명"
 					v-model="forms.name"
-					placeholder="성명을 적어주세요."
+					placeholder="예) 홍길동"
 				/>
 				<FormInput
 					title="생년월일"
 					v-model="forms.birthDate"
+					placeholder="예) 20000101"
 				/>
 				<CommonList
 					type="radio"
+					title="성별"
 					:list="state.genders"
 					:active="forms.gender"
 					@click="(key: string) => forms.gender = key"
 				/>
+				<CommonList
+					type="radio"
+					:list="options.inoculations"
+					:active="forms.isVaccinated"
+					@click="onSelectMemberVaccination"
+				/>
+				<div v-if="forms.isVaccinated === true" class="field-textarea">
+					<label class="field-title">마지막 접종일</label>
+					<textarea
+						v-model="forms.vaccinatedDate"
+						placeholder="예시) 인플루엔자 백신 3가, 4가 2025.11.1 접종&#10;예시)RSV 백신 2026.08.01 접종"
+					/>
+					<div class="validate">
+						<p :class="memberVaccinatedDateValidation.status">
+							{{ memberVaccinatedDateValidation.text }}
+						</p>
+					</div>
+				</div>
+				<p v-if="forms.isVaccinated === true" class="field-hint">백신접종 완료 선택 시 추가 입력</p>
 				<CommonButton
 					text="등록"
 					@click="addMember"
@@ -108,6 +131,10 @@ import iconPlus from '@/assets/img/ic_plus.svg'
 import iconWoman from '@/assets/img/ic_woman.svg'
 import iconMan from '@/assets/img/ic_man.svg'
 import { mainApi } from '~/composables/api/main'
+import options from '~/utils/options'
+import type { ProfileUserType } from '~/types'
+
+const toast = useToast()
 
 const state = ref({
 	genders: [
@@ -117,16 +144,17 @@ const state = ref({
 })
 
 // 프로필
-const user = ref({
-	id: '',
-	login_id: '',
+const user = ref<ProfileUserType>({
 	name: '',
 	gender: '',
 	birthDate: '',
-	address: '',
-	address_detail: '',
-	alarm: 'Y'
+	workplace: '',
+	workType: '',
+	alarm: 'Y',
 })
+
+const profileWorkplace = computed(() => user.value.workplace?.trim() || '')
+const profileWorkType = computed(() => user.value.workType?.trim() || '')
 //계정 리스트
 const account = ref([
 	{
@@ -149,7 +177,10 @@ const forms = ref({
 	name: '',
 	birthDate: '',
 	gender: '',
+	isVaccinated: true,
+	vaccinatedDate: '',
 })
+const memberVaccinatedDateValidation = ref({ status: '', text: '접종 정보를 입력해주세요.' })
 
 // 모달 : 로그아웃
 const isShowModalLogout = ref(false)
@@ -179,11 +210,11 @@ function goPage(type: string): void {
 
 //프로필 조회
 async function getProfile() {
-	const res = await mainApi.getProfile()
+	const profile = await mainApi.getProfile()
 
-	if(res) {
-		user.value = res.userInfo;
-		user.value.birthDate = dayjs(res.userInfo.birth_date).format('YYYYMMDD');
+	if (profile) {
+		user.value = profile;
+		user.value.birthDate = dayjs(profile.birth_date ?? profile.birthDate).format('YYYYMMDD');
 		isNotice.value = user.value.alarm === 'Y' ? true : false
 		account.value = [
 			{ 
@@ -211,17 +242,40 @@ async function getMembers() {
 }
 
 // 동거인 등록: addMember 함수
+function onSelectMemberVaccination(key: boolean) {
+	forms.value.isVaccinated = key
+	if (!key) {
+		forms.value.vaccinatedDate = ''
+		memberVaccinatedDateValidation.value.status = ''
+	}
+}
+
+function validateMemberForms(): boolean {
+	if (!forms.value.name || forms.value.birthDate.length !== 8 || !forms.value.gender) {
+		toast.add({ title: '성명, 생년월일, 성별을 입력해주세요.' })
+		return false
+	}
+	if (forms.value.isVaccinated === true && !forms.value.vaccinatedDate?.trim()) {
+		memberVaccinatedDateValidation.value.status = 'error'
+		return false
+	}
+	memberVaccinatedDateValidation.value.status = ''
+	return true
+}
+
 async function addMember() {
-	// forms.value를 사용하여 값 접근
+	if (!validateMemberForms()) return
 	const res = await memberApi.addMembers(forms.value);
 	if(res) {
 		await getMembers();
-		// 초기화
 		forms.value = {
 			name: '',
 			birthDate: '',
 			gender: '',
+			isVaccinated: true,
+			vaccinatedDate: '',
 		};
+		memberVaccinatedDateValidation.value.status = ''
 		isShowAddMember.value = false;
 	}
 }
@@ -298,6 +352,56 @@ async function logout() {
             }
             .common-list {
                 margin-top: 15px;
+            }
+        }
+        .notice-box {
+            background-color: #ECF7FD;
+            color: #3EB4EB;
+            font-size: var(--s14);
+            font-weight: 500;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+        .field-hint {
+            font-size: var(--s12);
+            font-weight: 400;
+            color: var(--gray600);
+            margin-top: -8px;
+            margin-bottom: 16px;
+        }
+        .field-textarea {
+            margin-top: 15px;
+            .field-title {
+                font-size: var(--s14);
+                font-weight: 500;
+                margin-bottom: 8px;
+                display: block;
+            }
+            textarea {
+                width: 100%;
+                min-height: 80px;
+                border: 1px solid var(--gray100);
+                padding: 16px;
+                font-size: var(--s14);
+                font-family: inherit;
+                resize: vertical;
+                &::placeholder {
+                    color: var(--gray400);
+                    line-height: 1.5;
+                }
+                &:focus {
+                    outline: none;
+                }
+            }
+            .validate p {
+                font-size: var(--s12);
+                color: var(--red);
+                margin-top: 8px;
+                visibility: hidden;
+                &.error {
+                    visibility: visible;
+                }
             }
         }
     }

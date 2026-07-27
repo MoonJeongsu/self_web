@@ -2,6 +2,9 @@
   "name": "nuxt-app",
   "private": true,
   "type": "module",
+  "overrides": {
+    "ignore": "4.0.6"
+  },
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",

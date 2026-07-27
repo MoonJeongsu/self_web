@@ -1,69 +1,98 @@
-import { useApi } from "../useApi";
-import type {SignInType, UserInfoType} from '~/types'
+import { useApi } from '../useApi'
+import type { ProfileUserType, SignInType, SignupRequestType } from '~/types'
+import { pickToken, pickUserInfo, unwrapApiData } from '~/utils/apiResponse'
+
+function storeSession(token: string, userInfo?: ProfileUserType) {
+	const accessTokenCookie = useCookie('accessToken', {
+		path: '/',
+		maxAge: 60 * 60 * 24 * 7,
+	})
+	if (import.meta.client) {
+		localStorage.setItem('accessToken', token)
+	}
+	accessTokenCookie.value = token
+
+	if (userInfo) {
+		const userInfoCookie = useCookie<ProfileUserType>('userInfo', {
+			maxAge: 60 * 60 * 24 * 7,
+			path: '/',
+		})
+		userInfoCookie.value = userInfo
+	}
+}
 
 export namespace mainApi {
-	//로그인
 	export async function login(body: SignInType) {
 		const { data, error } = await useApi('/v1/user/login', {
 			method: 'POST',
-			data: body
+			data: body,
 		})
-		if (error) throw error;
-		const userInfoCookie = useCookie<typeof data>('userInfo', {
-			maxAge: 60 * 60 * 24 * 7, // 7일
-			path: '/'
-		})
-		userInfoCookie.value = data.userInfo;
-		const accessTokenCookie = useCookie('accessToken', {
-			path: '/',
-			maxAge: 60 * 60 * 24 * 7,
-		})
-		localStorage.setItem("accessToken", data.token)
-		accessTokenCookie.value = data.token;
-  		return data;
+		if (error) throw error
+
+		const token = pickToken(data)
+		if (!token) {
+			throw { msg: '로그인 토큰을 받지 못했습니다.' }
+		}
+
+		let userInfo = pickUserInfo(data) as ProfileUserType | undefined
+		storeSession(token)
+
+		if (!userInfo?.name) {
+			userInfo = await fetchProfileUser()
+		} else {
+			storeSession(token, userInfo)
+		}
+
+		return { token, userInfo }
 	}
-	//아이디 체크
+
 	export async function idCheck(loginId: String) {
 		const { data, error } = await useApi('/v1/user/id/check', {
 			method: 'POST',
-			data: {
-				loginId
-			}
+			data: { loginId },
 		})
-		
-		if (error) throw error;
-
-  		return data;
+		if (error) throw error
+		return data
 	}
 
 	export async function updateFcm(form: Object) {
 		const { data, error } = await useApi('/v1/user/fcm', {
 			method: 'POST',
-			data: form
+			data: form,
 		})
-		
-		if (error) throw error;
-
-  		return data;
+		if (error) throw error
+		return data
 	}
 
-	
-
-	//회원가입
-	export async function signup(body: UserInfoType) {
+	export async function signup(body: SignupRequestType) {
 		const { data, error } = await useApi('/v1/user/signup', {
 			method: 'POST',
-			data: body
+			data: body,
 		})
-
-		if (error) throw error;
-
-  		return data;
+		if (error) throw error
+		return data
 	}
-	//회원정보 조회
+
 	export async function getProfile() {
-		const { data, error } = await useApi('/v1/user')
-		if (error) throw error;
-  		return data;
+		return fetchProfileUser()
 	}
+}
+
+async function fetchProfileUser(): Promise<ProfileUserType> {
+	const { data, error } = await useApi('/v1/user')
+	if (error) throw error
+
+	const userInfo = (unwrapApiData<ProfileUserType>(data) ?? pickUserInfo(data)) as ProfileUserType
+	const token = pickToken(data)
+	if (token) {
+		storeSession(token, userInfo)
+	} else if (userInfo) {
+		const userInfoCookie = useCookie<ProfileUserType>('userInfo', {
+			maxAge: 60 * 60 * 24 * 7,
+			path: '/',
+		})
+		userInfoCookie.value = userInfo
+	}
+
+	return userInfo
 }

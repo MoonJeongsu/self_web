@@ -62,14 +62,45 @@
 						@click="key => forms.gender = key"
 						:validate="state.genderValidation"
 					/>
-					<FormInput
-						title="거주지 검색"
-						v-model="forms.address"
-						btnText="검색"
-						placeholder="거주지"
-						:validate="state.addressValidation"
-						@submit="isShowSearchAddr = true"
+					<FormSelect
+						title="근무지 정보"
+						v-model="forms.workplace"
+						:options="options.workplaces"
+						placeholder="근무지를 선택해 주세요"
+						@select="onSelectWorkplace"
 					/>
+					<div class="validate-block">
+						<p :class="state.workplaceValidation.status">{{ state.workplaceValidation.text }}</p>
+					</div>
+					<FormSelect
+						title="근무형태"
+						v-model="forms.workType"
+						:options="options.workTypes"
+						placeholder="근무형태를 선택해 주세요"
+						@select="onSelectWorkType"
+					/>
+					<div class="validate-block">
+						<p :class="state.workTypeValidation.status">{{ state.workTypeValidation.text }}</p>
+					</div>
+					<CommonList
+						type="radio"
+						:list="options.inoculations"
+						:active="forms.isVaccinated"
+						@click="onSelectVaccination"
+					/>
+					<div v-if="forms.isVaccinated === true" class="field-textarea">
+						<label class="field-title">마지막 접종일</label>
+						<textarea
+							v-model="forms.vaccinatedDate"
+							placeholder="예시) 인플루엔자 백신 3가, 4가 2025.11.1 접종&#10;예시)RSV 백신 2026.08.01 접종"
+						/>
+						<div class="validate">
+							<p :class="state.vaccinatedDateValidation.status">
+								{{ state.vaccinatedDateValidation.text }}
+							</p>
+						</div>
+					</div>
+					<p v-if="forms.isVaccinated === true" class="field-hint">백신접종 완료 선택 시 추가 입력</p>
 				</div>
 				<CommonButton
 					text="확인"
@@ -78,6 +109,7 @@
 			</div>
 			<div class="forms" v-else-if="active.order === 3">
 				<div class="inner">
+					<div class="notice-box">보건관리자를 통한 확인 필요</div>
 					<FormInput
 						title="성명"
 						v-model="memberForms.name"
@@ -96,11 +128,37 @@
 						:active="memberForms.gender"
 						@click="key => memberForms.gender = key"
 					/>
+					<CommonList
+						type="radio"
+						:list="options.inoculations"
+						:active="memberForms.isVaccinated"
+						@click="onSelectMemberVaccination"
+					/>
+					<div v-if="memberForms.isVaccinated === true" class="field-textarea">
+						<label class="field-title">마지막 접종일</label>
+						<textarea
+							v-model="memberForms.vaccinatedDate"
+							placeholder="예시) 인플루엔자 백신 3가, 4가 2025.11.1 접종&#10;예시)RSV 백신 2026.08.01 접종"
+						/>
+						<div class="validate">
+							<p :class="state.memberVaccinatedDateValidation.status">
+								{{ state.memberVaccinatedDateValidation.text }}
+							</p>
+						</div>
+					</div>
+					<p v-if="memberForms.isVaccinated === true" class="field-hint">백신접종 완료 선택 시 추가 입력</p>
 				</div>
-				<CommonButton
-					text="등록"
-					@click="onRegistMember"
-				/>
+				<div class="btns">
+					<CommonButton
+						text="등록안함"
+						color="gray"
+						@click="onSkipMember"
+					/>
+					<CommonButton
+						text="등록"
+						@click="onRegistMember"
+					/>
+				</div>
 			</div>
 		</div>
 		<div class="complete" v-if="isComplete">
@@ -131,11 +189,6 @@
 			:show="isShowCompleteMember"
 			@submit="onComplete"
 		/>
-		<ModalSearchAddr
-			:show="isShowSearchAddr"
-			@close="isShowSearchAddr = false"
-			@select="onSearchAddress"
-		/>
 	</Container>
 </template>
 
@@ -144,6 +197,10 @@ import type { UserInfoType } from '~/types'
 import { mainApi } from '~/composables/api/main'
 import options from '~/utils/options'
 import { memberApi } from '~/composables/api/member'
+
+/** 백엔드 연동 전 프론트 UI·기능 테스트용 (연동 시 false로 변경) */
+const FRONTEND_ONLY = false
+
 const state = ref({
 	loginIdValidation: { status: '', text: '6~20자리의 영문, 숫자 조합의 ID를 입력해주세요', successTxt: '사용 가능한 ID입니다.'},
 	passwordValidation: { status: '', text: '8~20자리의 영문, 숫자 조합의 비밀번호를 입력해주세요.', successTxt: '사용 가능한 비밀번호입니다.' },
@@ -151,7 +208,10 @@ const state = ref({
 	nameValidation: { status: '', text: '성명을 입력해주세요.' },
 	birthValidation: { status: '', text: '생년월일 8자리를 입력해주세요.'},
 	genderValidation: { status: '', text: '성별을 선택해주세요' },
-	addressValidation: { status: '', text: '우측 검색 버튼을 통해 거주지를 입력해주세요.'}
+	workplaceValidation: { status: '', text: '근무지를 선택해주세요.' },
+	workTypeValidation: { status: '', text: '근무형태를 선택해주세요.' },
+	vaccinatedDateValidation: { status: '', text: '접종 정보를 입력해주세요.' },
+	memberVaccinatedDateValidation: { status: '', text: '접종 정보를 입력해주세요.' },
 })
 const steps = ref([
 	{ order: 1, title: '회원가입', desc: '스마트 자가진단을 사용할<br>계정 정보를 입력합니다.'},
@@ -170,19 +230,22 @@ const forms = ref<UserInfoType>({
 	name: '',
 	birthDate: '',
 	gender: '',
-	address: '',
+	workplace: '',
+	workType: '',
+	isVaccinated: true,
+	vaccinatedDate: '',
 })
 const memberForms = ref({
 	name: '',
 	birthDate: '',
-	gender: ''
+	gender: '',
+	isVaccinated: true,
+	vaccinatedDate: '',
 })
 //회원가입한 유저 정보. 동거인 등록 시에는 해당 정보로 로그인 후, 등록 가능
 const signupInfo = ref({})
 //toast
 const toast = useToast()
-//카카오 주소 검색 모달
-const isShowSearchAddr = ref(false);
 //동거인 등록 모달
 const isShowAddMember = ref(false);
 //동거인 등록 완료 모달
@@ -193,17 +256,60 @@ const isComplete = ref(false);
 onMounted(() => {
 	active.value = steps.value[0]
 })
-//카카오 주소 검색 api
-function onSearchAddress(val: string) {
-	forms.value.address = val;
-	isShowSearchAddr.value = false;
+
+function onSelectWorkplace(option: { text: string; value: string }) {
+	forms.value.workplace = option.value
+	state.value.workplaceValidation.status = ''
+}
+
+function onSelectWorkType(option: { text: string; value: string }) {
+	forms.value.workType = option.value
+	state.value.workTypeValidation.status = ''
+}
+
+function onSelectVaccination(key: boolean) {
+	forms.value.isVaccinated = key
+	if (!key) {
+		forms.value.vaccinatedDate = ''
+		state.value.vaccinatedDateValidation.status = ''
+	}
+}
+
+function onSelectMemberVaccination(key: boolean) {
+	memberForms.value.isVaccinated = key
+	if (!key) {
+		memberForms.value.vaccinatedDate = ''
+		state.value.memberVaccinatedDateValidation.status = ''
+	}
+}
+
+function validateMemberForms(): boolean {
+	let result = true
+	if (!memberForms.value.name || memberForms.value.birthDate.length !== 8 || !memberForms.value.gender) {
+		toast.add({ title: '성명, 생년월일, 성별을 입력해주세요.' })
+		result = false
+	}
+	if (memberForms.value.isVaccinated === true && !memberForms.value.vaccinatedDate?.trim()) {
+		state.value.memberVaccinatedDateValidation.status = 'error'
+		result = false
+	} else {
+		state.value.memberVaccinatedDateValidation.status = ''
+	}
+	return result
+}
+
+function onSkipMember() {
+	onComplete()
 }
 
 //동거인 등록 이동 : 로그인 => 동거인 등록
 async function goMemberRegister() {
 	isShowAddMember.value = false;
 	isComplete.value = false;
-	//로그인
+	if (FRONTEND_ONLY) {
+		active.value = steps.value[2]
+		return
+	}
 	const res = await mainApi.login({loginId: forms.value.loginId, password: forms.value.password})
 	if(res) {
 		active.value = steps.value[2]
@@ -212,8 +318,14 @@ async function goMemberRegister() {
 
 //동거인 등록 완료
 async function onRegistMember() {
+	if (!validateMemberForms()) return
 	isShowAddMember.value = false;
 	isShowCompleteMember.value = false;
+	if (FRONTEND_ONLY) {
+		console.log('[FRONTEND_ONLY] 동거인 등록:', memberForms.value)
+		isShowCompleteMember.value = true;
+		return
+	}
 	const res = await memberApi.addMembers(memberForms.value);
 	if(res) {
 		isShowCompleteMember.value = true;
@@ -230,25 +342,34 @@ function onComplete() {
 //STEP1: 유효성 검사 : 아이디, 비밀번호, 비밀번호 확인
 async function onValidStep1() {
 	let result = true;
-	
-	//아이디 유효성 검사
+
 	const loginIdReg = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,20}$/;
-	if(loginIdReg.test(forms.value.loginId)) {
-		state.value.loginIdValidation.status = 'success'
-		const data = await mainApi.idCheck(forms.value.loginId);
-		
-		if(data.msg) {
-			state.value.loginIdValidation.status = 'error'
-			state.value.loginIdValidation.text = "이미 가입된 ID 입니다."
-			result = false;
+	if (loginIdReg.test(forms.value.loginId)) {
+		if (!FRONTEND_ONLY) {
+			try {
+				const data = await mainApi.idCheck(forms.value.loginId);
+				if (data?.msg === true) {
+					state.value.loginIdValidation.status = 'error'
+					state.value.loginIdValidation.text = '이미 가입된 ID 입니다.'
+					result = false;
+				} else {
+					state.value.loginIdValidation.status = 'success'
+				}
+			} catch (error: any) {
+				state.value.loginIdValidation.status = 'error'
+				state.value.loginIdValidation.text = '아이디 확인에 실패했습니다. 잠시 후 다시 시도해주세요.'
+				toast.add({ title: error?.msg || '서버 연결에 실패했습니다.' })
+				result = false;
+			}
+		} else {
+			state.value.loginIdValidation.status = 'success'
 		}
 	} else {
 		state.value.loginIdValidation.status = 'error'
-		state.value.loginIdValidation.text = "6~20자리의 영문, 숫자 조합의 ID를 입력해주세요"
+		state.value.loginIdValidation.text = '6~20자리의 영문, 숫자 조합의 ID를 입력해주세요'
 		result = false;
 	}
 
-	//비밀번호 유효성 검사
 	const passwordReg = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,20}$/;
 	if(passwordReg.test(forms.value.password)) {
 		state.value.passwordValidation.status = 'success'
@@ -257,7 +378,6 @@ async function onValidStep1() {
 		result = false;
 	}
 
-	//비밀번호 확인 유효성 검사
 	if(forms.value.passwordConfirm && forms.value.password === forms.value.passwordConfirm) {
 		state.value.passwordConfirmValidation.status = 'success'
 	} else {
@@ -270,59 +390,88 @@ async function onValidStep1() {
 	}
 }
 
-//STEP2: 회원정보 등록. 성명, 생년월일, 성별, 거주지 유효성 검사
+//STEP2: 회원정보 등록
 async function onValidateStep2() {
 	let result = true;
 
-	//이름 유효성 검사
 	if(forms.value.name) {
 		state.value.nameValidation.status = ''
-		result = true;
 	} else {
 		state.value.nameValidation.status = 'error'
 		result = false;
 	}
 
-	//생년월일 유효성 검사
 	if(forms.value.birthDate.length === 8) {
 		state.value.birthValidation.status = ''
-		result = true;
 	} else {
 		state.value.birthValidation.status = 'error'
 		result = false;
 	}
 
-	//성별 유효성 검사
 	if(forms.value.gender) {
 		state.value.genderValidation.status = '';
-		result = true;
 	} else {
 		state.value.genderValidation.status = 'error';
 		result = false;
 	}
 
-	//거주지 유효성 검사
-	if(forms.value.address) {
-		state.value.addressValidation.status = '';
-		result = true
+	if(forms.value.workplace) {
+		state.value.workplaceValidation.status = '';
 	} else {
-		state.value.addressValidation.status = 'error';
+		state.value.workplaceValidation.status = 'error';
 		result = false;
 	}
 
-	if(result) {
-		try {
-			const res = await mainApi.signup(forms.value)
-			if(res) {
-				isComplete.value = true;
-				signupInfo.value = res;
-			}
-		} catch (error: any) {
-			console.log(error)
-			toast.add({
-				title: error?.msg
-			})
+	if(forms.value.workType) {
+		state.value.workTypeValidation.status = '';
+	} else {
+		state.value.workTypeValidation.status = 'error';
+		result = false;
+	}
+
+	if (forms.value.isVaccinated === true) {
+		if (forms.value.vaccinatedDate?.trim()) {
+			state.value.vaccinatedDateValidation.status = ''
+		} else {
+			state.value.vaccinatedDateValidation.status = 'error'
+			result = false;
 		}
+	} else {
+		state.value.vaccinatedDateValidation.status = ''
+	}
+
+	if(!result) return;
+
+	if (FRONTEND_ONLY) {
+		console.log('[FRONTEND_ONLY] 회원가입:', forms.value)
+		isComplete.value = true;
+		return
+	}
+
+	try {
+		const birthDate = forms.value.birthDate.length === 8
+			? forms.value.birthDate
+			: forms.value.birthDate.replace(/-/g, '')
+		const res = await mainApi.signup({
+			loginId: forms.value.loginId,
+			password: forms.value.password,
+			name: forms.value.name,
+			birthDate,
+			gender: forms.value.gender,
+			workplace: forms.value.workplace,
+			workType: forms.value.workType,
+			address: forms.value.workplace,
+			addressDetail: forms.value.workType,
+		})
+		if(res) {
+			isComplete.value = true;
+			signupInfo.value = res;
+		}
+	} catch (error: any) {
+		console.log(error)
+		toast.add({
+			title: error?.msg
+		})
 	}
 }
 </script>
@@ -376,6 +525,76 @@ async function onValidateStep2() {
 	}
 	:deep(.common-steps) {
 		margin: 10px 0 0;
+	}
+	.field-hint {
+		font-size: var(--s12);
+		font-weight: 400;
+		color: var(--gray600);
+		margin-top: -8px;
+		margin-bottom: 16px;
+	}
+	.validate-block {
+		margin-top: -12px;
+		margin-bottom: 8px;
+		p {
+			font-size: var(--s12);
+			color: var(--red);
+			visibility: hidden;
+			&.error {
+				visibility: visible;
+			}
+		}
+	}
+	.notice-box {
+		background-color: #ECF7FD;
+		color: #3EB4EB;
+		font-size: var(--s14);
+		font-weight: 500;
+		padding: 12px 16px;
+		border-radius: 8px;
+		margin-bottom: 20px;
+	}
+	.field-textarea {
+		margin-top: 15px;
+		.field-title {
+			font-size: var(--s14);
+			font-weight: 500;
+			margin-bottom: 8px;
+			display: block;
+		}
+		textarea {
+			width: 100%;
+			min-height: 80px;
+			border: 1px solid var(--gray100);
+			padding: 16px;
+			font-size: var(--s14);
+			font-family: inherit;
+			resize: vertical;
+			&::placeholder {
+				color: var(--gray400);
+				line-height: 1.5;
+			}
+			&:focus {
+				outline: none;
+			}
+		}
+		.validate p {
+			font-size: var(--s12);
+			color: var(--red);
+			margin-top: 8px;
+			visibility: hidden;
+			&.error {
+				visibility: visible;
+			}
+		}
+	}
+	.forms .btns {
+		display: flex;
+		gap: 8px;
+		margin-top: auto;
+		:deep(.common-button) {
+			flex: 1;
+		}
 	}
 	.complete {
 		position: fixed;

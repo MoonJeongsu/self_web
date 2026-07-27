@@ -1,4 +1,5 @@
 import { api } from '@/utils/axios';
+import { formatApiError } from '@/utils/apiError';
 
 type ApiMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
 
@@ -14,18 +15,25 @@ export async function useApi<TResponse = any, TRequest = any>(
 		options: UseApiOptions<TRequest> = {}
 	): Promise<{ data: TResponse | null; error: any }> {
 		try {
-			// 자동으로 accessToken 쿠키에서 읽어오기
-			const accessToken = localStorage.getItem('accessToken')
+			const accessToken = import.meta.client
+				? localStorage.getItem('accessToken')
+				: null
+
+			const isFormData = typeof FormData !== 'undefined' && options.data instanceof FormData
+			const headers: Record<string, string | undefined> = {
+				...(options.headers || {}),
+				Authorization: accessToken ? `Bearer ${accessToken}` : undefined,
+			}
+			if (isFormData) {
+				headers['Content-Type'] = undefined
+			}
 
 			const response = await api.request<TResponse>({
 				url,
 				method: options.method || 'GET',
 				data: options.data,
 				params: options.params,
-				headers: {
-					...(options.headers || {}),
-					Authorization: accessToken ? `Bearer ${accessToken}` : undefined
-				}
+				headers,
 			});
 		
 			return {
@@ -33,9 +41,20 @@ export async function useApi<TResponse = any, TRequest = any>(
 				error: null
 			};
 		} catch (error: any) {
+		if (error?.type === 'api-error') {
+			return {
+				data: null,
+				error: { msg: error.message || 'API 오류 발생' },
+			}
+		}
+
+		const status = error?.response?.status
 		return {
 			data: null,
-			error: error.response?.data || error.message
+			error: {
+				msg: formatApiError(error),
+				status,
+			},
 		};
 	}
 }

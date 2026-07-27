@@ -2,9 +2,8 @@
 import axios, { AxiosError } from 'axios';
 
 export const api = axios.create({
-	baseURL: 'http://210.120.6.98:7080',
-	// baseURL: 'http://192.168.1.149:8080',
-	timeout: 10000,
+	baseURL: 'https://smartjaga.gongjak.dev/smart-jaga-api',
+	timeout: 15000,
 	headers: {
 		'Content-Type': 'application/json'
 	}

@@ -1,6 +1,4 @@
 <template>
-
-</template><template>
 	<FormBaseInput
 		class="field-select"
 		type="text"
@@ -88,8 +86,9 @@ const emits = defineEmits([
 
 //옵션 선택
 function onSelect(option: OptionType) {
-	if(option.value) {
+	if (option.value) {
 		isFocus.value = false;
+		emits('update:modelValue', option.value)
 		emits('select', option)
 	}
 }

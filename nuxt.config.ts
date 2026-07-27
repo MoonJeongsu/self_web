@@ -1,7 +1,15 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
 	compatibilityDate: '2024-11-01',
-	devtools: { enabled: true },
+	devtools: { enabled: false },
+	runtimeConfig: {
+		public: {
+			apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL || 'https://smartjaga.gongjak.dev/smart-jaga-api',
+		},
+	},
+	ignoreOptions: {
+		allowRelativePaths: true,
+	},
 	ssr: true, // Default is true
 	components: [
 		{

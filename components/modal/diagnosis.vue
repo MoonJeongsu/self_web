@@ -59,14 +59,21 @@
 						type="radio"
 						:list="state.inoculations"
 						:active="forms.vaccineStatus.isVaccinated"
-						@click="key => forms.vaccineStatus.isVaccinated = key"
+						@click="onSelectVaccination"
 					/>
-					<FormInput
-						title="마지막 접종일"
-						placeholder="예) 20240101"
-						v-model="forms.vaccineStatus.vaccinatedDate"
-						:validate="state.validateLastInoculation"
-					/>
+					<div v-if="forms.vaccineStatus.isVaccinated === true" class="field-textarea">
+						<label class="field-title">마지막 접종일</label>
+						<textarea
+							v-model="forms.vaccineStatus.vaccinatedDate"
+							placeholder="예시) 인플루엔자 백신 3가, 4가 2025.11.1 접종&#10;예시)RSV 백신 2026.08.01 접종"
+						/>
+						<div class="validate">
+							<p :class="state.validateLastInoculation.status">
+								{{ state.validateLastInoculation.text }}
+							</p>
+						</div>
+					</div>
+					<p v-if="forms.vaccineStatus.isVaccinated === true" class="field-hint">백신접종 완료 선택 시 추가 입력</p>
 				</div>
 				<div class="btns">
 					<CommonButton
@@ -102,6 +109,22 @@
 							@click="nextDetailStep(detailStep.order)"
 						/>
 					</div>
+				</div>
+			</div>
+			<div class="forms step5" v-else-if="active.order === 5">
+				<div class="inner">
+					<FormKitUpload v-model="kitImage" />
+				</div>
+				<div class="btns">
+					<CommonButton
+						text="이전"
+						color="gray"
+						@click="beforeKitStep"
+					/>
+					<CommonButton
+						text="다음"
+						@click="onKitUploadNext"
+					/>
 				</div>
 			</div>
 		</div>
@@ -168,6 +191,14 @@ import { memberApi } from '~/composables/api/member'
 import { mainApi } from '~/composables/api/main'
 import type {MemberInfoType, TestInfoType} from '~/types'
 import { getCoordsByAddress } from '@/composables/kakao'
+import { formatApiError } from '@/utils/apiError'
+import { ATTENDANCE_MOCK, DIAGNOSIS_MOCK, KIT_UPLOAD_MOCK } from '~/utils/featureFlags'
+import {
+	DEFAULT_MOCK_MEMBER_ID,
+	DEFAULT_MOCK_MEMBER_NAME,
+	useAttendanceMock,
+} from '~/composables/useAttendanceMock'
+import { useKitUploadMock } from '~/composables/useKitUploadMock'
 
 interface StepType {
 	order: number;
@@ -176,9 +207,17 @@ interface StepType {
 }
 
 const toast = useToast()
-const emits = defineEmits([
-	'cancel'
-])
+
+/** 백엔드 /kit API 연동 */
+const SKIP_KIT_UPLOAD = false
+
+const { recordDiagnosis, hasDiagnosisOnDate } = useAttendanceMock()
+const { saveKitUpload } = useKitUploadMock()
+
+const emits = defineEmits<{
+	cancel: []
+	completed: [{ memberId: string; date: string }]
+}>()
 //거주 구성원
 const members = ref<MemberInfoType[]>([])
 //유저 프로필 - 주소를 알기 위해서 지정
@@ -197,7 +236,8 @@ const state = ref({
 		{ order: 1, title: '누가 진단하시나요?', desc: '아래 정보로 더 정확도 높은 진단 결과를<br>얻을 수 있어요.'},
 		{ order: 2, title: '현재 증상을 알려주세요.', desc: '현재 겪고 있는 증상을 선택해 주세요.<br>증상이 모두 있을 경우 모두 선택해 주세요.'},
 		{ order: 3, title: '접종 정보를 알려주세요.', desc: '현재 체온과 예방 접종 여부를 입력해 주세요.'},
-		{ order: 4, title: '김지수 님의 현재 상태를 진단합니다.', desc: ''}
+		{ order: 4, title: '현재 상태를 진단합니다.', desc: ''},
+		{ order: 5, title: '진단키트 결과를 촬영해 주세요.', desc: '사전 배포된 진단키트의 결과를<br>촬영하고 업로드해 주세요.'}
 	],
 	detailSteps: [
 		{ 
@@ -207,8 +247,9 @@ const state = ref({
 				{ text: '오늘', value: 0 },
 				{ text: '어제', value: 1 },
 				{ text: '3일전', value: 2 },
-				{ text: '일주일전', value: 3 },
-				{ text: '잘 모르겠음', value: 4 },
+				{ text: '4일전', value: 3 },
+				{ text: '5일전', value: 4 },
+				{ text: '6일전', value: 5 },
 			]
 		},
 		{
@@ -221,31 +262,15 @@ const state = ref({
 		},
 		{
 			order: 3,
-			title: '소화기 증상이 있나요? (복통, 설사 등)',
+			title: '14일 이내에 유증상자와 접촉한 이력이 있나요?',
 			options: [
 				{ text: '예', value: 0 },
-				{ text: '아니오', value: 1 }
+				{ text: '아니오', value: 1 },
+				{ text: '모름', value: 2 }
 			]
 		},
 		{
 			order: 4,
-			title: '14일 이내 다른 질환자와 접촉한 이력이 있나요?',
-			options: [
-				{ text: '예', value: 0 },
-				{ text: '아니오', value: 1, skipNextStep: true }
-			]
-		},
-		{
-			order: 5,
-			title: '접촉 이후 증상이 시작됐나요?',
-			options: [
-				{ text: '예', value: 0 },
-				{ text: '아니오', value: 1 },
-				{ text: '잘 모르겠음', value: 2}
-			]
-		},
-		{
-			order: 6,
 			title: '동거인 중 이전에 걸렸거나 현재 걸린 인원이 있나요?',
 			options: [
 				{ text: '예', value: 0 },
@@ -253,7 +278,7 @@ const state = ref({
 			]
 		},
 		{
-			order: 7,
+			order: 5,
 			title: '해당 인원은 완치된 상태인가요?',
 			options: [
 				{ text: '예', value: 0 },
@@ -273,14 +298,15 @@ const state = ref({
 		{ title: '접종 안함', key: false }
 	],
 	validateTemperature: {status: '', text: '30~45사이의 숫자만 입력해주세요.'},
-	validateLastInoculation: {status: '', text: '가장 최근에 접종한 일자 8자리를 입력해주세요.'},
+	validateLastInoculation: {status: '', text: '접종 정보를 입력해주세요.'},
 	//증상 시작 일자
 	dates: [
 		{ text: '오늘', value: '0' },
 		{ text: '어제', value: '1' },
 		{ text: '3일전', value: '2' },
-		{ text: '일주일전', value: '3' },
-		{ text: '잘 모르겠음', value: '4' },
+		{ text: '4일전', value: '3' },
+		{ text: '5일전', value: '4' },
+		{ text: '6일전', value: '5' },
 	],
 	diagnosisResult: '자가진단 결과 현재 <span class="red">호흡기 질환</span>이 의심됩니다.<br>가족 또는 지인과의 접촉을 삼가시고 빠른 시일내에 가까운 병원에 방문하시길 권고드립니다.',
 	//의료기관 리스트
@@ -317,10 +343,20 @@ const isComplete = ref(false);
 //loading
 const isLoading = ref(false);
 const isShowNotAnswer = ref(false);
+const kitImage = ref('')
 
 onMounted(async () => {
 	active.value = state.value.steps[0]
 	detailStep.value = state.value.detailSteps[0]
+
+	if (DIAGNOSIS_MOCK) {
+		user.value.name = DEFAULT_MOCK_MEMBER_NAME
+		user.value.address = '서울특별시 강남구'
+		state.value.facility = []
+		await getMembers()
+		return
+	}
+
 	await getProfile()
 	await getMembers()
 	setTimeout(async () => {
@@ -333,18 +369,20 @@ onMounted(async () => {
 				return el;
 			});
 		} else {
-			state.value.facility = []; // 혹은 초기화하지 않으려면 이 줄 생략
+			state.value.facility = [];
 		}
-
 	}, 1000);
 })
 
 //프로필 조회
 async function getProfile() {
-	const res = await mainApi.getProfile()
+	const profile = await mainApi.getProfile()
 
-	if(res) {
-		user.value = res.userInfo;
+	if (profile) {
+		user.value = { ...user.value, ...profile } as typeof user.value
+		if (profile.address) {
+			user.value.address = profile.address
+		}
 	}
 }
 
@@ -358,31 +396,69 @@ function resolveDateValue(label: string): string {
 			return today.subtract(1, 'day').format('YYYY-MM-DD')
 		case '3일전':
 			return today.subtract(3, 'day').format('YYYY-MM-DD')
-		case '일주일전':
-			return today.subtract(7, 'day').format('YYYY-MM-DD')
+		case '4일전':
+			return today.subtract(4, 'day').format('YYYY-MM-DD')
+		case '5일전':
+			return today.subtract(5, 'day').format('YYYY-MM-DD')
+		case '6일전':
+			return today.subtract(6, 'day').format('YYYY-MM-DD')
 		default:
-			return label // "잘 모르겠음" 그대로 둠
+			return label
 	}
 }
 
 //동거인 조회
 async function getMembers() {
-	const today = dayjs().format('YYYY-MM-DD');
+	const today = dayjs().format('YYYY-MM-DD')
+
+	if (DIAGNOSIS_MOCK) {
+		members.value = [{
+			id: DEFAULT_MOCK_MEMBER_ID,
+			name: DEFAULT_MOCK_MEMBER_NAME,
+			gender: 'M',
+			birthDate: '19900101',
+			isComplete: hasDiagnosisOnDate(DEFAULT_MOCK_MEMBER_ID, today) ? 'Y' : 'N',
+		}]
+		return
+	}
+
 	const res = await memberApi.getMembers(today)
 	if (res) members.value = res.list
+}
+
+function afterDiagnosisSaved() {
+	const memberId = String(selected.value.id)
+	const date = dayjs().format('YYYY-MM-DD')
+
+	if (ATTENDANCE_MOCK && memberId) {
+		recordDiagnosis(memberId, date)
+	}
+
+	members.value = members.value.map(m =>
+		String(m.id) === memberId ? { ...m, isComplete: 'Y' as const } : m,
+	)
+
+	emits('completed', { memberId, date })
+}
+
+//STEP1: 진단 대상 선택 시 Step 4 제목 갱신
+function updateDiagnosisTitle() {
+	state.value.steps[3].title = `${selected.value.name} 님의 현재 상태를 진단합니다.`
 }
 
 //STEP1: 진단 완료한 동거인의 재진단
 function startDiagnosis(item: MemberInfoType) {
 	selected.value = item;
+	kitImage.value = ''
+	updateDiagnosisTitle()
 	if(item.isComplete === 'Y') {
 		isShowComplete.value = true;
 		return;
 	}
 	active.value = state.value.steps[1]
-	state.value.steps[3].title = `${selected.value.name} 님의 현재 상태를 진단합니다.`
 }
 function restartDiagnosis() {
+	updateDiagnosisTitle()
 	active.value = state.value.steps[1]
 	isShowComplete.value = false;
 }
@@ -398,6 +474,57 @@ function selectSymptom(key: string) {
         // 이미 있으면 제거
         symptoms.splice(index, 1);
     }
+}
+
+/** 신규 백엔드 6문항 — legacy 7문항 변환 비활성 */
+const USE_LEGACY_ANSWER_FORMAT = false
+
+function getApiErrorMessage(error: unknown): string {
+	return formatApiError(error)
+}
+
+function mapAnswersForLegacyBackend(answers: { value: number | null }[]) {
+	return [
+		{ value: answers[0]?.value ?? 0 },
+		{ value: answers[1]?.value ?? 0 },
+		{ value: 1 },
+		{ value: answers[2]?.value ?? 0 },
+		{ value: 1 },
+		{ value: answers[3]?.value ?? 0 },
+		{ value: answers[4]?.value ?? 0 },
+	]
+}
+
+function prepareSelfTestBody(form: TestInfoType): TestInfoType {
+	const body: TestInfoType = {
+		...form,
+		vaccineStatus: { ...form.vaccineStatus },
+		answer: form.answer.map(item => ({ value: Number(item.value ?? 0) })),
+	}
+
+	body.vaccineStatus.temperature = Number(body.vaccineStatus.temperature)
+
+	if (!body.vaccineStatus.isVaccinated) {
+		body.vaccineStatus.vaccinatedDate = ''
+		body.vaccineStatus.vaccinationMemo = ''
+	} else {
+		const memo = form.vaccineStatus.vaccinatedDate?.trim() || ''
+		body.vaccineStatus.vaccinationMemo = memo
+		body.vaccineStatus.vaccinatedDate = /^\d{8}$/.test(memo)
+			? formatCompactDate(memo)
+			: ''
+	}
+
+	if (USE_LEGACY_ANSWER_FORMAT && body.answer.length === 5) {
+		body.answer = mapAnswersForLegacyBackend(body.answer)
+	} else if (body.answer.length === 5) {
+		// UI 5문항 → 백엔드 6문항 호환 (6번째 기본값)
+		body.answer.push({ value: 0 })
+	}
+
+	delete body.kitImage
+
+	return body
 }
 
 // 숫자형 문자열을 'YYYY-MM-DD'로 포맷 변환
@@ -433,7 +560,6 @@ function onStep2(step: number) {
 				{ "value": 0 },
 				{ "value": 0 },
 				{ "value": 0 },
-				{ "value": 0 },
 			]
 		})
 		state.value.diagnosisResult = `자가진단 결과 현재 <span class="green">정상</span>입니다.<br>외출 시 항상 마스크 착용을 권고드리며 건강 관리에 유의해주세요.`
@@ -442,23 +568,26 @@ function onStep2(step: number) {
 }
 
 //STEP3: 접종 정보 유효성 검사 
+function onSelectVaccination(key: boolean) {
+	forms.value.vaccineStatus.isVaccinated = key
+	if (!key) {
+		forms.value.vaccineStatus.vaccinatedDate = ''
+		state.value.validateLastInoculation.status = ''
+	}
+}
+
 function onValidateForm() {
 	let result = true;
 
-	//마지막 접종일
-	if(forms.value.vaccineStatus.vaccinatedDate.length == 8) {
+	if (forms.value.vaccineStatus.isVaccinated === true) {
+		if (forms.value.vaccineStatus.vaccinatedDate?.trim()) {
+			state.value.validateLastInoculation.status = ''
+		} else {
+			state.value.validateLastInoculation.status = 'error'
+			result = false;
+		}
+	} else {
 		state.value.validateLastInoculation.status = ''
-		result = true;
-	} 
-
-	if(!forms.value.vaccineStatus.vaccinatedDate || forms.value.vaccineStatus.vaccinatedDate.length !== 8) {
-		state.value.validateLastInoculation.status = 'error'
-		result = false;
-	}
-
-	if(forms.value.vaccineStatus.isVaccinated === false) {
-		state.value.validateLastInoculation.status = ''
-		result = true;
 	}
 
 	//현재 체온
@@ -468,7 +597,6 @@ function onValidateForm() {
 		result = false;
 	} else {
 		state.value.validateTemperature.status = ''
-		result = true;
 	}
 	
 	if(result) {
@@ -476,23 +604,83 @@ function onValidateForm() {
 	}
 }
 
-//STEP4: 자가진단 완료
-async function onComplete(newForm: TestInfoType) {
+function goToKitStep() {
+	active.value = state.value.steps[4]
+}
+
+function beforeKitStep() {
+	active.value = state.value.steps[3]
+	const lastOrder = state.value.detailSteps[state.value.detailSteps.length - 1].order
+	detailStep.value = state.value.detailSteps.find(el => el.order === lastOrder)
+		|| state.value.detailSteps[state.value.detailSteps.length - 1]
+}
+
+async function onKitUploadNext() {
+	if (!kitImage.value) {
+		toast.add({ title: '진단키트 사진을 촬영해주세요.' })
+		return
+	}
+	await onComplete()
+}
+
+//STEP5: 자가진단 + 진단키트 저장
+async function onComplete(newForm?: TestInfoType) {
 	isLoading.value = true;
 	if(newForm) {
 		forms.value = newForm
 	}
-	forms.value.vaccineStatus.vaccinatedDate = formatCompactDate(forms.value.vaccineStatus.vaccinatedDate)
+
+	if (!selected.value.id) {
+		isLoading.value = false
+		toast.add({ title: '진단 대상을 선택해주세요.' })
+		return
+	}
+
+	const body = prepareSelfTestBody(forms.value)
+
 	const payload = {
 		memberId: selected.value.id,
-		body: forms.value
+		body
 	}
-	const res = await selfTestApi.addSelfTest(payload)
-	if(res) {
+
+	if (DIAGNOSIS_MOCK) {
+		console.log('[DIAGNOSIS_MOCK] 자가진단+진단키트:', payload)
+		if (KIT_UPLOAD_MOCK && kitImage.value) {
+			await saveKitUpload({
+				memberId: String(selected.value.id),
+				memberName: selected.value.name,
+				kitImage: kitImage.value,
+				testDate: dayjs().format('YYYY-MM-DD'),
+				symptoms: forms.value.currentCondition?.join(', ') || undefined,
+			})
+		}
+		afterDiagnosisSaved()
 		setTimeout(() => {
-			isLoading.value = false;
-			isComplete.value = true;
+			isLoading.value = false
+			isComplete.value = true
+		}, 500)
+		return
+	}
+
+	try {
+		const res = await selfTestApi.addSelfTest(payload)
+		if (!SKIP_KIT_UPLOAD && kitImage.value && res.selfTestId) {
+			await selfTestApi.uploadKitImage({
+				selfTestId: res.selfTestId,
+				kitImage: kitImage.value,
+			})
+		} else if (!SKIP_KIT_UPLOAD && kitImage.value && !res.selfTestId) {
+			console.warn('[kit] selfTestId 없음 — kit 업로드 생략')
+		}
+		afterDiagnosisSaved()
+		setTimeout(() => {
+			isLoading.value = false
+			isComplete.value = true
 		}, 1000)
+	} catch (error) {
+		console.log(error)
+		isLoading.value = false
+		toast.add({ title: getApiErrorMessage(error) })
 	}
 }
 
@@ -521,22 +709,19 @@ function beforeDetailStep(order: number) {
 }
 
 function nextDetailStep(order: number) {
+	const lastOrder = state.value.detailSteps[state.value.detailSteps.length - 1].order
+
 	if(forms.value.answer[order - 1].value == null) {
 		isShowNotAnswer.value = true;
 		return;
 	}
-	if(order === 7) {
-		onComplete();
+	if(order === lastOrder) {
+		goToKitStep();
+	} else if(order === 4 && forms.value.answer[order - 1].value == 1) {
+		forms.value.answer[order].value = 0;
+		goToKitStep();
 	} else {
-		if(order === 4 && forms.value.answer[order - 1].value == 1) {
-			detailStep.value = state.value.detailSteps.find(el => el.order === order + 2);
-			forms.value.answer[order].value = 0;
-		} else if(order === 6 && forms.value.answer[order - 1].value == 1) {
-			forms.value.answer[order].value = 0;
-			onComplete();
-		} else {
-			detailStep.value = state.value.detailSteps.find(el => el.order === order + 1);
-		}
+		detailStep.value = state.value.detailSteps.find(el => el.order === order + 1);
 	}
 }
 </script>
@@ -557,6 +742,25 @@ function nextDetailStep(order: number) {
 				position: static;
 				margin-top: auto;
 				width: 100%;
+			}
+		}
+		.forms.step5 {
+			min-height: calc(100vh - 180px);
+			display: flex;
+			flex-direction: column;
+			padding-top: 20px;
+			.inner {
+				flex: 1;
+			}
+			.btns {
+				position: static;
+				margin-top: auto;
+				width: 100%;
+				display: flex;
+				gap: 8px;
+				:deep(.common-button) {
+					flex: 1;
+				}
 			}
 		}
 	}
@@ -587,6 +791,47 @@ function nextDetailStep(order: number) {
 		justify-content: space-between;
 		&:has(.gray) {
 			gap: 0 8px;
+		}
+	}
+	.field-hint {
+		font-size: var(--s12);
+		font-weight: 400;
+		color: var(--gray600);
+		margin-top: -8px;
+		margin-bottom: 16px;
+	}
+	.field-textarea {
+		margin-top: 15px;
+		.field-title {
+			font-size: var(--s14);
+			font-weight: 500;
+			margin-bottom: 8px;
+			display: block;
+		}
+		textarea {
+			width: 100%;
+			min-height: 80px;
+			border: 1px solid var(--gray100);
+			padding: 16px;
+			font-size: var(--s14);
+			font-family: inherit;
+			resize: vertical;
+			&::placeholder {
+				color: var(--gray400);
+				line-height: 1.5;
+			}
+			&:focus {
+				outline: none;
+			}
+		}
+		.validate p {
+			font-size: var(--s12);
+			color: var(--red);
+			margin-top: 8px;
+			visibility: hidden;
+			&.error {
+				visibility: visible;
+			}
 		}
 	}
 	.result {
