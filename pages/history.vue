@@ -81,6 +81,7 @@
 			<ModalDiagnosis 
 				v-show="isShowDiagnosis" 
 				@cancel="isShowDiagnosis = false" 
+				@completed="onDiagnosisCompleted"
 			/>
 		</Container>
 	</div>
@@ -191,7 +192,7 @@ function mapSelfTestDataToHistoryItems(apiData: Record<string, any[]>): HistoryI
 	for (const dateKey in apiData) {
 		apiData[dateKey].forEach(test => {
 			result.push({
-				date: new Date(dateKey),
+				date: dayjs(dateKey).toDate(),
 				status: mapStatus(test.testResult),
 				content: test.testResult === 'STATUS_DANGER' ? '진단결과가 없습니다' : '자가진단 진행 완료'
 			})
@@ -239,6 +240,13 @@ function openDiagnosisModal() {
 
 function handleDrag() {
 	isShowHistory.value = false
+}
+
+async function onDiagnosisCompleted() {
+	isShowDiagnosis.value = false
+	if (selected.value?.id) {
+		await getHistory(selected.value.id)
+	}
 }
 </script>
 

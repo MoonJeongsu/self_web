@@ -92,7 +92,7 @@ import {
 
 } from '~/composables/useAttendanceMock'
 
-import { mapWeeklyAttendanceApi } from '~/composables/useAttendanceApi'
+import { mapWeeklyAttendanceApi, enrichAttendanceWithSelfTestDates } from '~/composables/useAttendanceApi'
 
 import { attendanceApi } from '~/composables/api/attendance'
 
@@ -222,9 +222,12 @@ async function refreshAttendance() {
 
 		})
 
-		attendanceStatus.value = mapWeeklyAttendanceApi(
-			data,
-			activeMemberName.value,
+		attendanceStatus.value = await enrichAttendanceWithSelfTestDates(
+			mapWeeklyAttendanceApi(
+				data,
+				activeMemberName.value,
+				activeMemberId.value,
+			),
 			activeMemberId.value,
 		)
 

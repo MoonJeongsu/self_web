@@ -386,6 +386,9 @@ async function logout() {
                 font-size: var(--s14);
                 font-family: inherit;
                 resize: vertical;
+                background-color: #fff;
+                color: var(--gray800);
+                color-scheme: light;
                 &::placeholder {
                     color: var(--gray400);
                     line-height: 1.5;

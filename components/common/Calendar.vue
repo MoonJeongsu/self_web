@@ -84,7 +84,7 @@ onMounted(() => {
 function changeList() {
     attrs.value = props.list.map((el) => ({
         dot: el.status === 'error' ? 'red' : el.status === 'success' ? 'green' : '',
-        dates: [new Date(el.date)] // 문자열 → Date 변환
+        dates: [dayjs(el.date).toDate()]
     }));
 }
 
