@@ -1,5 +1,6 @@
 import dayjs from 'dayjs'
 import isoWeek from 'dayjs/plugin/isoWeek'
+import { selfTestApi } from '~/composables/api/selftest'
 import type { AttendanceWeekItem, WeeklyAttendanceApiData, WeeklyAttendanceStatus } from '~/types/attendance'
 
 dayjs.extend(isoWeek)
@@ -11,32 +12,55 @@ function formatPeriodLabel(start: dayjs.Dayjs, end: dayjs.Dayjs) {
 	return `${fmt(start)} ~ ${fmt(end)}`
 }
 
-function isDateInRange(date: dayjs.Dayjs, start: dayjs.Dayjs, end: dayjs.Dayjs) {
-	return !date.isBefore(start, 'day') && !date.isAfter(end, 'day')
-}
-
 function findCurrentWeek(weeks: AttendanceWeekItem[]) {
 	return weeks.find(week => week.current) ?? weeks[weeks.length - 1]
 }
 
-function inferDiagnosedDatesInWeek(
-	currentWeek: AttendanceWeekItem | undefined,
-	today: dayjs.Dayjs,
+export function extractSelfTestDatesInRange(
+	apiData: Record<string, unknown[]>,
+	startDate: string,
+	endDate: string,
 ): string[] {
-	if (!currentWeek?.achieved) return []
+	const start = dayjs(startDate)
+	const end = dayjs(endDate)
 
-	const start = dayjs(currentWeek.startDate)
-	const end = dayjs(currentWeek.endDate)
+	return Object.keys(apiData)
+		.filter(dateKey => {
+			const d = dayjs(dateKey)
+			return d.isValid() && !d.isBefore(start, 'day') && !d.isAfter(end, 'day')
+		})
+		.sort()
+}
 
-	if (start.isSame(end, 'day')) {
-		return [currentWeek.startDate]
+export async function enrichAttendanceWithSelfTestDates(
+	status: WeeklyAttendanceStatus,
+	memberId: string,
+): Promise<WeeklyAttendanceStatus> {
+	try {
+		const res = await selfTestApi.getSelfTest({
+			memberId,
+			startDate: status.weekStartDate,
+			endDate: status.weekEndDate,
+		})
+		const historyData = (res as { data?: Record<string, unknown[]> })?.data ?? res
+		if (!historyData || typeof historyData !== 'object') return status
+
+		const diagnosedDatesInWeek = extractSelfTestDatesInRange(
+			historyData as Record<string, unknown[]>,
+			status.weekStartDate,
+			status.weekEndDate,
+		)
+		const today = dayjs().format('YYYY-MM-DD')
+
+		return {
+			...status,
+			diagnosedDatesInWeek,
+			todayDiagnosed: diagnosedDatesInWeek.includes(today),
+			weeklyDiagnosisCount: diagnosedDatesInWeek.length,
+		}
+	} catch {
+		return status
 	}
-
-	if (isDateInRange(today, start, end)) {
-		return [today.format('YYYY-MM-DD')]
-	}
-
-	return [currentWeek.startDate]
 }
 
 function mapEventWeeklyAttendanceApi(
@@ -51,9 +75,6 @@ function mapEventWeeklyAttendanceApi(
 	const displayStart = today.startOf('isoWeek')
 	const displayEnd = today.endOf('isoWeek')
 	const weeklyMissionCompleted = apiData.currentWeekAchieved ?? currentWeek?.achieved ?? false
-	const diagnosedDatesInWeek = inferDiagnosedDatesInWeek(currentWeek, today)
-	const todayStr = today.format('YYYY-MM-DD')
-	const todayDiagnosed = diagnosedDatesInWeek.includes(todayStr)
 	const status = weeklyMissionCompleted ? 'COMPLETE' : 'PENDING'
 
 	return {
@@ -64,13 +85,13 @@ function mapEventWeeklyAttendanceApi(
 		weekEndDate: displayEnd.format('YYYY-MM-DD'),
 		weekLabel: `${today.format('YYYY년 M월')} · 이번 주`,
 		periodLabel: formatPeriodLabel(displayStart, displayEnd),
-		todayDiagnosed,
+		todayDiagnosed: false,
 		weeklyMissionCompleted,
-		weeklyDiagnosisCount: diagnosedDatesInWeek.length,
+		weeklyDiagnosisCount: 0,
 		daysRemainingInWeek: Math.max(displayEnd.diff(today, 'day'), 0),
 		status,
 		statusLabel: weeklyMissionCompleted ? '출석 완료' : '진단 필요',
-		diagnosedDatesInWeek,
+		diagnosedDatesInWeek: [],
 	}
 }
 
