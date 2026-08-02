@@ -62,7 +62,7 @@
 						@click="onSelectVaccination"
 					/>
 					<div v-if="forms.vaccineStatus.isVaccinated === true" class="field-textarea">
-						<label class="field-title">마지막 접종일</label>
+						<label class="field-title">백신접종 정보 입력</label>
 						<textarea
 							v-model="forms.vaccineStatus.vaccinatedDate"
 							placeholder="예시) 인플루엔자 백신 3가, 4가 2025.11.1 접종&#10;예시)RSV 백신 2026.08.01 접종"
@@ -73,7 +73,6 @@
 							</p>
 						</div>
 					</div>
-					<p v-if="forms.vaccineStatus.isVaccinated === true" class="field-hint">백신접종 완료 선택 시 추가 입력</p>
 				</div>
 				<div class="btns">
 					<CommonButton
@@ -137,6 +136,7 @@
 				<b>자가진단 결과</b>
 				<p v-html="state.diagnosisResult"></p>
 			</div>
+			<!-- 인근 의료기관 (20260730: UI 확인 — 주석처리)
 			<div class="box">
 				<b>인근 의료기관</b>
 				<p>진단 위치 : {{ user.address }}</p>
@@ -150,6 +150,7 @@
 					</li>
 				</ul>
 			</div>
+			-->
 			<div class="btns">
 				<CommonButton
 					text="마침"
@@ -190,7 +191,7 @@ import { selfTestApi } from '~/composables/api/selftest'
 import { memberApi } from '~/composables/api/member'
 import { mainApi } from '~/composables/api/main'
 import type {MemberInfoType, TestInfoType} from '~/types'
-import { getCoordsByAddress } from '@/composables/kakao'
+// import { getCoordsByAddress } from '@/composables/kakao'
 import { formatApiError } from '@/utils/apiError'
 import { ATTENDANCE_MOCK, DIAGNOSIS_MOCK, KIT_UPLOAD_MOCK } from '~/utils/featureFlags'
 import {
@@ -233,7 +234,7 @@ const user = ref({
 })
 const state = ref({
 	steps: [
-		{ order: 1, title: '누가 진단하시나요?', desc: '아래 정보로 더 정확도 높은 진단 결과를<br>얻을 수 있어요.'},
+		{ order: 1, title: '누가 진단하시나요?', desc: '아래 정보로 더 정확도 높은<br>진단 결과를 얻을 수 있어요.'},
 		{ order: 2, title: '현재 증상을 알려주세요.', desc: '현재 겪고 있는 증상을 선택해 주세요.<br>증상이 모두 있을 경우 모두 선택해 주세요.'},
 		{ order: 3, title: '접종 정보를 알려주세요.', desc: '현재 체온과 예방 접종 여부를 입력해 주세요.'},
 		{ order: 4, title: '현재 상태를 진단합니다.', desc: ''},
@@ -352,26 +353,26 @@ onMounted(async () => {
 	if (DIAGNOSIS_MOCK) {
 		user.value.name = DEFAULT_MOCK_MEMBER_NAME
 		user.value.address = '서울특별시 강남구'
-		state.value.facility = []
 		await getMembers()
 		return
 	}
 
 	await getProfile()
 	await getMembers()
-	setTimeout(async () => {
-		const { lat, lng } = await getCoordsByAddress(user.value.address)
-		const res = await searchNearbyHospitals(lat, lng)
-		if (Array.isArray(res) && res.length > 0) {
-			state.value.facility = res.slice(0, 3).map(el => {
-				el.title = el.name;
-				el.desc = el.phone;
-				return el;
-			});
-		} else {
-			state.value.facility = [];
-		}
-	}, 1000);
+	// 인근 의료기관 조회 (20260730: UI 확인 — 주석처리)
+	// setTimeout(async () => {
+	// 	const { lat, lng } = await getCoordsByAddress(user.value.address)
+	// 	const res = await searchNearbyHospitals(lat, lng)
+	// 	if (Array.isArray(res) && res.length > 0) {
+	// 		state.value.facility = res.slice(0, 3).map(el => {
+	// 			el.title = el.name;
+	// 			el.desc = el.phone;
+	// 			return el;
+	// 		});
+	// 	} else {
+	// 		state.value.facility = [];
+	// 	}
+	// }, 1000);
 })
 
 //프로필 조회

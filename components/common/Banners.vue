@@ -2,7 +2,10 @@
 	<div class="common-banners" :class="[direction]">
 		<UCarousel 
 			:items="list" 
-			:ui="{ item: 'basis-full' }" 
+			:ui="{
+				item: 'basis-full snap-start snap-always',
+				container: 'scroll-auto overscroll-x-contain touch-pan-x',
+			}" 
 			class="overflow-hidden"
 			indicators
 			ref="carouselRef"
@@ -50,20 +53,66 @@ const props = defineProps({
 	}
 });
 
-const carouselRef = ref()
+const carouselRef = ref<{
+	$el: HTMLElement
+}>()
 
 const emits = defineEmits([
 	'change'
 ])
 
-watch(() => carouselRef.value?.page, (val) => {
-	emits('change', val)
-})
+let scrollContainer: HTMLElement | null = null
+
+function getScrollContainer() {
+	return carouselRef.value?.$el?.firstElementChild as HTMLElement | null
+}
+
+function emitCurrentPage() {
+	if (!scrollContainer?.firstElementChild) return
+
+	const itemWidth = (scrollContainer.firstElementChild as HTMLElement).clientWidth
+	if (!itemWidth) return
+
+	const page = Math.round(scrollContainer.scrollLeft / itemWidth) + 1
+	emits('change', page)
+}
+
+function bindScrollListener() {
+	const container = getScrollContainer()
+	if (!container || container === scrollContainer) return
+
+	unbindScrollListener()
+	scrollContainer = container
+	scrollContainer.addEventListener('scroll', emitCurrentPage, { passive: true })
+	emitCurrentPage()
+}
+
+function unbindScrollListener() {
+	if (!scrollContainer) return
+	scrollContainer.removeEventListener('scroll', emitCurrentPage)
+	scrollContainer = null
+}
+
+watch(carouselRef, bindScrollListener, { immediate: true })
+
+onUnmounted(unbindScrollListener)
 </script>
 
 <style lang="scss" scoped>
 .common-banners {
 	width: 100%;
+
+	:deep(.no-scrollbar) {
+		scroll-behavior: auto;
+		scroll-snap-type: x mandatory;
+		overscroll-behavior-x: contain;
+		touch-action: pan-x;
+
+		> div {
+			scroll-snap-align: start;
+			scroll-snap-stop: always;
+		}
+	}
 	&.rtl {
 		.content {
 			flex-direction: column-reverse;

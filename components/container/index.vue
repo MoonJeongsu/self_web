@@ -167,6 +167,8 @@ function goBack() {
 			font-weight: 400;
 			color: var(--gray700);
 			margin-top: 6px;
+			line-height: 1.5;
+			word-break: keep-all;
 			:deep(b) {
 				font-weight: 500;
 				display: inline-block;

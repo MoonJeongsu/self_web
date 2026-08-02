@@ -63,7 +63,7 @@
 			:show="isShowAddMember"
 			@hide="isShowAddMember = false"
 		>
-			<div class="notice-box">보건관리자를 통한 확인 필요</div>
+			<div class="notice-box">동거인 등록 시 근무지 보건관리자에게 사전 확인 요망</div>
 			<div class="forms">
 				<FormInput
 					title="성명"
@@ -89,7 +89,7 @@
 					@click="onSelectMemberVaccination"
 				/>
 				<div v-if="forms.isVaccinated === true" class="field-textarea">
-					<label class="field-title">마지막 접종일</label>
+					<label class="field-title">백신접종 정보 입력</label>
 					<textarea
 						v-model="forms.vaccinatedDate"
 						placeholder="예시) 인플루엔자 백신 3가, 4가 2025.11.1 접종&#10;예시)RSV 백신 2026.08.01 접종"
@@ -100,7 +100,6 @@
 						</p>
 					</div>
 				</div>
-				<p v-if="forms.isVaccinated === true" class="field-hint">백신접종 완료 선택 시 추가 입력</p>
 				<CommonButton
 					text="등록"
 					@click="addMember"
@@ -205,6 +204,10 @@ function hideModalLogout(): void {
 function goPage(type: string): void {
 	if (type === 'guide') {
 		navigateTo('/guide');
+		return;
+	}
+	if (type === 'notice' || type === 'faq') {
+		toast.add({ title: '준비 중입니다.' });
 	}
 }
 
@@ -230,8 +233,14 @@ async function getProfile() {
 async function getMembers() {
 	const res = await memberApi.getMembers();
 	if (res?.list) {
+		const ownerId = user.value.id
 		members.value = res.list
-			.filter(el => el.name !== user.value.name)
+			.filter(el => {
+				if (ownerId != null && ownerId !== '') {
+					return String(el.id) !== String(ownerId)
+				}
+				return el.name !== user.value.name
+			})
 			.map(el => {
 				el.title = el.name;
 				el.desc = dayjs(el.birthDate).format('YYYYMMDD');
