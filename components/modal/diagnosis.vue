@@ -272,7 +272,7 @@ const state = ref({
 		},
 		{
 			order: 4,
-			title: '동거인 중 이전에 걸렸거나 현재 걸린 인원이 있나요?',
+			title: '동거인 중 같은 증상이 있는 분이 있나요?(최근, 현재 모두 포함)',
 			options: [
 				{ text: '예', value: 0 },
 				{ text: '아니오', value: 1 }
