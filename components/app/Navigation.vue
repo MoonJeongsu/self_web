@@ -50,7 +50,9 @@ function goPage(path: string) {
 	width: 100%;
 	display: flex;
 	align-items: center;
-	height: 54px;
+	height: calc(54px + env(safe-area-inset-bottom, 0px));
+	padding-bottom: env(safe-area-inset-bottom, 0px);
+	box-sizing: border-box;
 	justify-content: space-evenly;
 	position: fixed;
 	bottom: 0;
@@ -60,6 +62,7 @@ function goPage(path: string) {
 	z-index: 100;
 	.item {	
 		width: 25%;
+		height: 54px;
 		display: flex;
 		align-items: center;
 		justify-content: center;

@@ -786,7 +786,7 @@ function nextDetailStep(order: number) {
 	.btns {
 		width: calc(100% - 40px);
 		position: absolute;
-		bottom: 26px;
+		bottom: calc(26px + env(safe-area-inset-bottom, 0px));
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
