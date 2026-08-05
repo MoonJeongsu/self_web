@@ -89,7 +89,7 @@
 						@click="onSelectVaccination"
 					/>
 					<div v-if="forms.isVaccinated === true" class="field-textarea">
-						<label class="field-title">마지막 접종일</label>
+						<label class="field-title">백신접종 정보 입력</label>
 						<textarea
 							v-model="forms.vaccinatedDate"
 							placeholder="예시) 인플루엔자 백신 3가, 4가 2025.11.1 접종&#10;예시)RSV 백신 2026.08.01 접종"
@@ -100,7 +100,6 @@
 							</p>
 						</div>
 					</div>
-					<p v-if="forms.isVaccinated === true" class="field-hint">백신접종 완료 선택 시 추가 입력</p>
 				</div>
 				<CommonButton
 					text="확인"
@@ -109,7 +108,7 @@
 			</div>
 			<div class="forms" v-else-if="active.order === 3">
 				<div class="inner">
-					<div class="notice-box">보건관리자를 통한 확인 필요</div>
+					<div class="notice-box">동거인 등록 시 근무지 보건관리자에게 사전 확인 요망</div>
 					<FormInput
 						title="성명"
 						v-model="memberForms.name"
@@ -135,7 +134,7 @@
 						@click="onSelectMemberVaccination"
 					/>
 					<div v-if="memberForms.isVaccinated === true" class="field-textarea">
-						<label class="field-title">마지막 접종일</label>
+						<label class="field-title">백신접종 정보 입력</label>
 						<textarea
 							v-model="memberForms.vaccinatedDate"
 							placeholder="예시) 인플루엔자 백신 3가, 4가 2025.11.1 접종&#10;예시)RSV 백신 2026.08.01 접종"
@@ -146,7 +145,6 @@
 							</p>
 						</div>
 					</div>
-					<p v-if="memberForms.isVaccinated === true" class="field-hint">백신접종 완료 선택 시 추가 입력</p>
 				</div>
 				<div class="btns">
 					<CommonButton
@@ -175,7 +173,7 @@
 		<!--동거인 등록 여부 확인 모달-->
 		<Modal
 			title="동거인을 등록할까요?"
-			desc="함께 거주하는 분을 등록하여<br>기기 하나로 각자 진단이 가능합니다."
+			desc="함께 거주하는 분을 등록하여<br>기기 하나로 각자 진단이 가능합니다.<br><br>동거인 등록 시 근무지 보건관리자에게 사전 확인 요망"
 			cancelBtnTxt="다음에 할게요"
 			submitBtnTxt="등록하기"
 			:show="isShowAddMember"

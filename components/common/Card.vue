@@ -44,17 +44,26 @@ const props = defineProps({
 	position: relative;
 	&.sm {
 		width: calc(50% - 5px);
-		height: 134px;
+		min-height: 134px;
+		height: auto;
+		padding: 20px 12px 44px;
 		display: flex;
+		flex-direction: column;
 		align-items: center;
 		justify-content: center;
 		background-color: var(--sub);
 		margin-top: 0;
 		border-radius: 6px;
+		.txt-box {
+			width: 100%;
+			text-align: center;
+		}
 		.title {
 			font-size: var(--s16);
 			font-weight: 500;
 			color: var(--active);
+			line-height: 1.4;
+			word-break: keep-all;
 		}
 		.desc {
 			display: inline-flex;
@@ -64,8 +73,10 @@ const props = defineProps({
 			background-color: var(--gray700);
 			color: white;
 			padding: 0 7px;
+			font-size: var(--s12);
+			white-space: nowrap;
 			position: absolute;
-			bottom: 22px;
+			bottom: 16px;
 			left: 50%;
 			transform: translateX(-50%);
 		}
@@ -76,6 +87,11 @@ const props = defineProps({
 	&.md {
 		padding: 23px 18px;
 		border-radius: 6px;
+		.txt-box {
+			padding-right: 76px;
+			word-break: keep-all;
+			line-height: 1.5;
+		}
 	}
 	&.lg {
 		width: 100%;
@@ -118,6 +134,36 @@ const props = defineProps({
 	}
 	~ .common-card {
 		margin-top: 16px;
+	}
+}
+
+@media (max-width: 360px) {
+	.common-card {
+		&.sm {
+			width: 100%;
+			min-height: 120px;
+			padding-bottom: 48px;
+		}
+		&.md {
+			padding: 20px 16px;
+
+			.txt-box {
+				padding-right: 68px;
+			}
+
+			.title {
+				font-size: var(--s16);
+			}
+
+			.desc {
+				font-size: 13px;
+			}
+
+			.img-box img {
+				max-width: 52px;
+				max-height: 52px;
+			}
+		}
 	}
 }
 </style>

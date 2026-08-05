@@ -42,7 +42,7 @@
 			type="button"
 			@click="emit('check-in')"
 		>
-			출석 진단하기
+			진단하고 출석체크
 		</button>
 		<button
 			v-else

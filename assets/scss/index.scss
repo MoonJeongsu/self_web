@@ -2,12 +2,20 @@
 
 html, body {
 	margin: 0;
-	padding: 0 !important;
+	padding: 0;
+	padding-left: 0 !important;
+	padding-right: 0 !important;
+	padding-top: 0 !important;
+	min-height: 100%;
+	-webkit-text-size-adjust: 100%;
+	text-size-adjust: 100%;
 	* {
 		box-sizing: border-box;
 		background-repeat: no-repeat;
 		background-position: center;
 		font-family: 'Spoqa Han Sans Neo', 'sans-serif';
+		-webkit-text-size-adjust: 100%;
+		text-size-adjust: 100%;
 		&:focus {
 			outline: 0;
 		}
