@@ -22,7 +22,7 @@
 				color="outline-black"
 				text="동거인 추가"
 				:icon="iconPlus"
-				@click="isShowAddMember = true"
+				@click="isShowConfirmAddMember = true"
 				:disabled="members.length > 5"
 			/>
 			<CommonList
@@ -56,6 +56,16 @@
 				@click="showLogout"
 			/>
 		</div>
+		<!--동거인 등록 여부 확인 모달-->
+		<Modal
+			title="동거인을 등록할까요?"
+			desc="함께 거주하는 분을 등록하여<br>기기 하나로 각자 진단이 가능합니다.<br><br>동거인 등록 시 근무지 보건관리자에게 사전 확인 요망"
+			cancelBtnTxt="다음에 할게요"
+			submitBtnTxt="등록하기"
+			:show="isShowConfirmAddMember"
+			@cancel="isShowConfirmAddMember = false"
+			@submit="goMemberRegister"
+		/>
 		<ModalOffcanvas
 			:title="`동거인 등록<span>${members.length}명 이용중</span>`"
 			isBottom
@@ -119,7 +129,6 @@
 </template>
 
 <script setup lang="ts">
-import dayjs from 'dayjs'
 import { memberApi } from '~/composables/api/member'
 import {noticeApi} from '~/composables/api/notice'
 definePageMeta({
@@ -132,6 +141,13 @@ import iconMan from '@/assets/img/ic_man.svg'
 import { mainApi } from '~/composables/api/main'
 import options from '~/utils/options'
 import type { ProfileUserType } from '~/types'
+import {
+	formatBirthDate,
+	isPrimaryUserMember,
+	mergeProfileWithOwner,
+	normalizeMember,
+	normalizeProfileUser,
+} from '~/utils/profile'
 
 const toast = useToast()
 
@@ -165,8 +181,15 @@ const account = ref([
 
 // 거주 구성원
 const members = ref([])
+//동거인 등록 여부 확인 모달
+const isShowConfirmAddMember = ref(false)
 //구성원 추가 모달
 const isShowAddMember = ref(false);
+
+function goMemberRegister() {
+	isShowConfirmAddMember.value = false
+	isShowAddMember.value = true
+}
 
 // 알림 설정
 const isNotice = ref(true)
@@ -216,14 +239,26 @@ async function getProfile() {
 	const profile = await mainApi.getProfile()
 
 	if (profile) {
-		user.value = profile;
-		user.value.birthDate = dayjs(profile.birth_date ?? profile.birthDate).format('YYYYMMDD');
-		isNotice.value = user.value.alarm === 'Y' ? true : false
+		const normalized = normalizeProfileUser(profile)
+		const cached = useCookie<ProfileUserType>('userInfo').value
+
+		if (cached) {
+			const cachedProfile = normalizeProfileUser(cached)
+			if (!normalized.name || /^\d{8}$/.test(normalized.name)) {
+				normalized.name = cachedProfile.name || normalized.name
+			}
+			if (!normalized.id && cachedProfile.id) {
+				normalized.id = cachedProfile.id
+			}
+		}
+
+		user.value = normalized
+		isNotice.value = user.value.alarm === 'Y'
 		account.value = [
-			{ 
-				title: '로그아웃', 
-				desc: user.value?.login_id, 
-				key: 'logout' 
+			{
+				title: '로그아웃',
+				desc: user.value?.login_id,
+				key: 'logout'
 			}
 		]
 	}
@@ -233,17 +268,18 @@ async function getProfile() {
 async function getMembers() {
 	const res = await memberApi.getMembers();
 	if (res?.list) {
-		const ownerId = user.value.id
-		members.value = res.list
-			.filter(el => {
-				if (ownerId != null && ownerId !== '') {
-					return String(el.id) !== String(ownerId)
-				}
-				return el.name !== user.value.name
-			})
+		const list = res.list.map(el => normalizeMember(el))
+		const owner = list[0]
+
+		if (owner) {
+			user.value = mergeProfileWithOwner(user.value, owner)
+		}
+
+		members.value = list
+			.filter(el => !isPrimaryUserMember(el, user.value))
 			.map(el => {
 				el.title = el.name;
-				el.desc = dayjs(el.birthDate).format('YYYYMMDD');
+				el.desc = formatBirthDate(el.birthDate);
 				el.img = el.gender === 'M' ? iconMan : iconWoman;
 				return el;
 			});

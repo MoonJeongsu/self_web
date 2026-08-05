@@ -82,3 +82,15 @@ button {
 		margin-top: 14px;
 	}
 }
+
+.notice-box {
+	background-color: #ECF7FD;
+	color: #3EB4EB;
+	font-size: var(--s14);
+	font-weight: 500;
+	padding: 12px 16px;
+	border-radius: 8px;
+	margin-bottom: 16px;
+	text-align: left;
+	word-break: keep-all;
+}
