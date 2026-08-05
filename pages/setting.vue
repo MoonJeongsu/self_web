@@ -22,7 +22,7 @@
 				color="outline-black"
 				text="동거인 추가"
 				:icon="iconPlus"
-				@click="isShowAddMember = true"
+				@click="isShowConfirmAddMember = true"
 				:disabled="members.length > 5"
 			/>
 			<CommonList
@@ -56,6 +56,16 @@
 				@click="showLogout"
 			/>
 		</div>
+		<!--동거인 등록 여부 확인 모달-->
+		<Modal
+			title="동거인을 등록할까요?"
+			desc="함께 거주하는 분을 등록하여<br>기기 하나로 각자 진단이 가능합니다.<br><br>동거인 등록 시 근무지 보건관리자에게 사전 확인 요망"
+			cancelBtnTxt="다음에 할게요"
+			submitBtnTxt="등록하기"
+			:show="isShowConfirmAddMember"
+			@cancel="isShowConfirmAddMember = false"
+			@submit="goMemberRegister"
+		/>
 		<ModalOffcanvas
 			:title="`동거인 등록<span>${members.length}명 이용중</span>`"
 			isBottom
@@ -171,8 +181,15 @@ const account = ref([
 
 // 거주 구성원
 const members = ref([])
+//동거인 등록 여부 확인 모달
+const isShowConfirmAddMember = ref(false)
 //구성원 추가 모달
 const isShowAddMember = ref(false);
+
+function goMemberRegister() {
+	isShowConfirmAddMember.value = false
+	isShowAddMember.value = true
+}
 
 // 알림 설정
 const isNotice = ref(true)
