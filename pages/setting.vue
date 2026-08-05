@@ -119,7 +119,6 @@
 </template>
 
 <script setup lang="ts">
-import dayjs from 'dayjs'
 import { memberApi } from '~/composables/api/member'
 import {noticeApi} from '~/composables/api/notice'
 definePageMeta({
@@ -132,6 +131,13 @@ import iconMan from '@/assets/img/ic_man.svg'
 import { mainApi } from '~/composables/api/main'
 import options from '~/utils/options'
 import type { ProfileUserType } from '~/types'
+import {
+	formatBirthDate,
+	isPrimaryUserMember,
+	mergeProfileWithOwner,
+	normalizeMember,
+	normalizeProfileUser,
+} from '~/utils/profile'
 
 const toast = useToast()
 
@@ -216,14 +222,26 @@ async function getProfile() {
 	const profile = await mainApi.getProfile()
 
 	if (profile) {
-		user.value = profile;
-		user.value.birthDate = dayjs(profile.birth_date ?? profile.birthDate).format('YYYYMMDD');
-		isNotice.value = user.value.alarm === 'Y' ? true : false
+		const normalized = normalizeProfileUser(profile)
+		const cached = useCookie<ProfileUserType>('userInfo').value
+
+		if (cached) {
+			const cachedProfile = normalizeProfileUser(cached)
+			if (!normalized.name || /^\d{8}$/.test(normalized.name)) {
+				normalized.name = cachedProfile.name || normalized.name
+			}
+			if (!normalized.id && cachedProfile.id) {
+				normalized.id = cachedProfile.id
+			}
+		}
+
+		user.value = normalized
+		isNotice.value = user.value.alarm === 'Y'
 		account.value = [
-			{ 
-				title: '로그아웃', 
-				desc: user.value?.login_id, 
-				key: 'logout' 
+			{
+				title: '로그아웃',
+				desc: user.value?.login_id,
+				key: 'logout'
 			}
 		]
 	}
@@ -233,17 +251,18 @@ async function getProfile() {
 async function getMembers() {
 	const res = await memberApi.getMembers();
 	if (res?.list) {
-		const ownerId = user.value.id
-		members.value = res.list
-			.filter(el => {
-				if (ownerId != null && ownerId !== '') {
-					return String(el.id) !== String(ownerId)
-				}
-				return el.name !== user.value.name
-			})
+		const list = res.list.map(el => normalizeMember(el))
+		const owner = list[0]
+
+		if (owner) {
+			user.value = mergeProfileWithOwner(user.value, owner)
+		}
+
+		members.value = list
+			.filter(el => !isPrimaryUserMember(el, user.value))
 			.map(el => {
 				el.title = el.name;
-				el.desc = dayjs(el.birthDate).format('YYYYMMDD');
+				el.desc = formatBirthDate(el.birthDate);
 				el.img = el.gender === 'M' ? iconMan : iconWoman;
 				return el;
 			});

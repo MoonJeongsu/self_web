@@ -90,7 +90,7 @@
 					<div 
 						class="box"
 					>
-						<b>{{ detail.order }}. {{ detail.title }}</b>
+						<b>{{ detail.order }}. <span v-html="detail.title"></span></b>
 						<FormRadio
 							:list="detail.options"
 							:key="`detail${detail.order}`"
@@ -272,7 +272,7 @@ const state = ref({
 		},
 		{
 			order: 4,
-			title: '동거인 중 같은 증상이 있는 분이 있나요?(최근, 현재 모두 포함)',
+			title: '동거인 중 같은 증상이 있는 분이 있나요?<br>(최근, 현재 모두 포함)',
 			options: [
 				{ text: '예', value: 0 },
 				{ text: '아니오', value: 1 }
