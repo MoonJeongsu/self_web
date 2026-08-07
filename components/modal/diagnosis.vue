@@ -121,7 +121,7 @@
 						@click="beforeKitStep"
 					/>
 					<CommonButton
-						text="다음"
+						text="등록 완료"
 						@click="onKitUploadNext"
 					/>
 				</div>
@@ -207,7 +207,7 @@ interface StepType {
 	desc?: string
 }
 
-const toast = useToast()
+const toast = useAppToast()
 
 /** 백엔드 /kit API 연동 */
 const SKIP_KIT_UPLOAD = false
@@ -617,10 +617,6 @@ function beforeKitStep() {
 }
 
 async function onKitUploadNext() {
-	if (!kitImage.value) {
-		toast.add({ title: '진단키트 사진을 촬영해주세요.' })
-		return
-	}
 	await onComplete()
 }
 

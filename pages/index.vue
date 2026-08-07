@@ -118,7 +118,7 @@ import cardImg3 from '@/assets/img/main_3.png'
 
 
 
-const toast = useToast()
+const toast = useAppToast()
 
 const { getWeeklyStatus } = useAttendanceMock()
 
