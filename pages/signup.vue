@@ -243,7 +243,7 @@ const memberForms = ref({
 //회원가입한 유저 정보. 동거인 등록 시에는 해당 정보로 로그인 후, 등록 가능
 const signupInfo = ref({})
 //toast
-const toast = useToast()
+const toast = useAppToast()
 //동거인 등록 모달
 const isShowAddMember = ref(false);
 //동거인 등록 완료 모달

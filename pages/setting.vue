@@ -149,7 +149,7 @@ import {
 	normalizeProfileUser,
 } from '~/utils/profile'
 
-const toast = useToast()
+const toast = useAppToast()
 
 const state = ref({
 	genders: [
