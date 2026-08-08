@@ -1,6 +1,6 @@
 <template>
 	<Container 
-		class="diagnosis"
+		:class="['diagnosis', { 'step5-fit': active.order === 5 && !isComplete }]"
 		isBack
 		:title="active.title"
 		:desc="active.desc"
@@ -112,7 +112,7 @@
 			</div>
 			<div class="forms step5" v-else-if="active.order === 5">
 				<div class="inner">
-					<FormKitUpload v-model="kitImage" />
+					<FormKitUpload v-model="kitImage" fill />
 				</div>
 				<div class="btns">
 					<CommonButton
@@ -759,6 +759,52 @@ function nextDetailStep(order: number) {
 					flex: 1;
 				}
 			}
+		}
+	}
+	&.step5-fit {
+		:deep(> .page-content) {
+			height: calc(100vh - 48px - env(safe-area-inset-bottom, 0px));
+			overflow: hidden;
+			display: flex;
+			flex-direction: column;
+			h4.title {
+				flex-shrink: 0;
+				padding-top: 12px;
+			}
+			p.desc {
+				flex-shrink: 0;
+			}
+			.content {
+				flex: 1;
+				min-height: 0;
+				display: flex;
+				flex-direction: column;
+			}
+			.forms.step5 {
+				flex: 1;
+				min-height: 0;
+				height: 100%;
+				flex-wrap: nowrap;
+				padding-top: 12px;
+				padding-bottom: 16px;
+				.inner {
+					flex: 1 1 auto;
+					min-height: 0;
+					width: 100%;
+					overflow: hidden;
+					display: flex;
+					flex-direction: column;
+				}
+				.btns {
+					flex: 0 0 auto;
+					margin-top: 12px;
+					width: 100%;
+				}
+			}
+		}
+		:deep(.common-steps) {
+			flex-shrink: 0;
+			margin: 8px 0 0;
 		}
 	}
 	.detail-box {

@@ -1,5 +1,5 @@
 <template>
-	<div class="kit-upload">
+	<div class="kit-upload" :class="{ 'kit-upload--fill': fill }">
 		<label class="field-title">진단키트 사진</label>
 		<div class="card">
 			<div
@@ -61,6 +61,11 @@ const props = defineProps({
 	modelValue: {
 		type: String,
 		default: ''
+	},
+	/** 부모 높이에 맞춰 촬영 영역을 축소 (세로 스크롤 방지) */
+	fill: {
+		type: Boolean,
+		default: false
 	}
 })
 
@@ -318,6 +323,72 @@ function onFileChange(event: Event) {
 		.guide-frame {
 			width: min(56%, 140px);
 		}
+	}
+}
+
+.kit-upload--fill {
+	height: 100%;
+	min-height: 0;
+	display: flex;
+	flex-direction: column;
+
+	.field-title {
+		flex-shrink: 0;
+		margin-bottom: 8px;
+	}
+
+	.card {
+		flex: 1;
+		min-height: 0;
+		display: flex;
+		flex-direction: column;
+		padding: 12px;
+		overflow: hidden;
+	}
+
+	.upload-zone {
+		flex: 1;
+		min-height: 120px;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.upload-content {
+		flex: 1;
+		min-height: 0;
+		padding: 12px 10px;
+		gap: 6px;
+	}
+
+	.preview {
+		flex: 1;
+		min-height: 100px;
+		height: auto;
+	}
+
+	.guide-note {
+		flex-shrink: 0;
+		margin-top: 6px;
+		font-size: 11px;
+		display: -webkit-box;
+		-webkit-line-clamp: 2;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+	}
+
+	.retake {
+		flex-shrink: 0;
+		margin-top: 6px;
+	}
+
+	.guide-tips {
+		flex-shrink: 0;
+		margin-top: 8px;
+		font-size: 11px;
+	}
+
+	.guide-frame {
+		width: min(48%, 140px);
 	}
 }
 </style>
