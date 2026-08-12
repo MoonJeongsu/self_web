@@ -4,7 +4,7 @@ export default defineNuxtConfig({
 	devtools: { enabled: false },
 	runtimeConfig: {
 		public: {
-			apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL || 'https://smartjaga.gongjak.dev/smart-jaga-api',
+			apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL || 'http://43.201.9.18:8082/smart-jaga-api',
 		},
 	},
 	ignoreOptions: {
