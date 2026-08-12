@@ -3,8 +3,10 @@
 		<UCarousel 
 			:items="list" 
 			:ui="{
-				item: 'basis-full snap-start snap-always',
-				container: 'scroll-auto overscroll-x-contain touch-pan-x',
+				strategy: 'override',
+				wrapper: 'relative',
+				item: 'flex flex-none basis-full snap-start snap-always',
+				container: 'relative w-full flex overflow-x-auto snap-x snap-mandatory scroll-auto overscroll-x-contain touch-pan-x',
 			}" 
 			class="overflow-hidden"
 			indicators
@@ -103,14 +105,14 @@ onUnmounted(unbindScrollListener)
 	width: 100%;
 
 	:deep(.no-scrollbar) {
-		scroll-behavior: auto;
-		scroll-snap-type: x mandatory;
+		scroll-behavior: auto !important;
+		scroll-snap-type: x mandatory !important;
 		overscroll-behavior-x: contain;
 		touch-action: pan-x;
 
 		> div {
-			scroll-snap-align: start;
-			scroll-snap-stop: always;
+			scroll-snap-align: start !important;
+			scroll-snap-stop: always !important;
 		}
 	}
 	&.rtl {
