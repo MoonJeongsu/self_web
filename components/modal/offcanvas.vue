@@ -48,11 +48,16 @@ const emits = defineEmits([
 
 const offcanvasInstance = ref<any>(null);
 
+function onHidden() {
+	emits('hide')
+}
+
 onMounted(() => {
     const el = document.getElementById(props.id);
     if (el && window.bootstrap) {
         // getOrCreateInstance: offcanvas 인스턴스를 가져오거나 생성합니다.
         offcanvasInstance.value = window.bootstrap.Offcanvas.getOrCreateInstance(el);
+		el.addEventListener('hidden.bs.offcanvas', onHidden)
         // 초기 show 값에 따라 offcanvas 표시
         if (props.show) {
             offcanvasInstance.value.show();
@@ -61,6 +66,11 @@ onMounted(() => {
         }
     }
 });
+
+onBeforeUnmount(() => {
+	const el = document.getElementById(props.id);
+	el?.removeEventListener('hidden.bs.offcanvas', onHidden)
+})
 
 watch(
     () => props.show,

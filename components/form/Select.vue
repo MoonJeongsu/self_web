@@ -1,46 +1,49 @@
 <template>
-	<FormBaseInput
-		class="field-select"
-		type="text"
-		:modelValue="modelValue"
-		:title="title"
-		:required="required"
-		:disabled="disabled"
-		:readonly="true"
-		:placeholder="formatPlaceholder"
-		:isCol="isCol"
-		@focus="onFocus"
-	>
-		<FormOptions
-			v-if="options && isFocus"
-			:modelValue="modelValue"
-			:options="options"
-			@select="onSelect"
-		/>
-	</FormBaseInput>
+	<div class="field field-select" :class="{ 'is-open': isOpen, 'is-value': !!modelValue }">
+		<label class="field-title" v-if="title">{{ title }}</label>
+		<button
+			type="button"
+			class="select-trigger"
+			:disabled="disabled"
+			@click="openSheet"
+		>
+			<span :class="{ placeholder: !displayText }">
+				{{ displayText || formatPlaceholder }}
+			</span>
+			<i class="chevron" aria-hidden="true" />
+		</button>
+
+		<ModalOffcanvas
+			:id="sheetId"
+			:title="title"
+			:show="isOpen"
+			@hide="closeSheet"
+		>
+			<FormOptions
+				:modelValue="modelValue"
+				:options="options"
+				@select="onSelect"
+			/>
+		</ModalOffcanvas>
+	</div>
 </template>
 
 <script setup lang="ts">
-//text와 value 값이 다를 경우 대비
 interface OptionType {
-	text: string,
+	text: string
 	value: string
 }
 
 const props = defineProps({
-	title: { //레이블
+	title: {
 		type: String,
 		default: ''
 	},
-	modelValue: { //v-model 값 지정
+	modelValue: {
 		type: String,
 		default: ''
 	},
-	type: { //form type
-		type: String,
-		default: 'text'
-	},
-	placeholder: { // 기본은 title 기준 placeholder 세팅. custom 하고 싶을 때 사용 
+	placeholder: {
 		type: String,
 		default: ''
 	},
@@ -48,7 +51,7 @@ const props = defineProps({
 		type: Boolean,
 		default: false
 	},
-	disabled: { 
+	disabled: {
 		type: Boolean,
 		default: false
 	},
@@ -62,46 +65,105 @@ const props = defineProps({
 	}
 })
 
-const isFocus = ref(false);
+const emits = defineEmits(['update:modelValue', 'select'])
 
-//init
-onMounted(() => {
-	isFocus.value = false;
+const isOpen = ref(false)
+const uid = useId()
+const sheetId = computed(() => `form-select-${uid}`)
+
+const displayText = computed(() => {
+	const found = props.options.find((option) => option.value === props.modelValue)
+	return found?.text || ''
 })
 
-//placeholder 자동완성
 const formatPlaceholder = computed(() => {
-	const text = props.title;
-	if(props.placeholder) {
+	if (props.placeholder) {
 		return props.placeholder
 	}
-	if(text) {
-		return `${format.checkBatchimEnding(text)} 선택해주세요`
+	if (props.title) {
+		return `${format.checkBatchimEnding(props.title)} 선택해주세요`
 	}
+	return '선택해주세요'
 })
 
-const emits = defineEmits([
-  	'update:modelValue', 'select'
-])
-
-//옵션 선택
-function onSelect(option: OptionType) {
-	if (option.value) {
-		isFocus.value = false;
-		emits('update:modelValue', option.value)
-		emits('select', option)
-	}
+function openSheet() {
+	if (props.disabled) return
+	isOpen.value = true
 }
 
-//focus
-function onFocus(value: boolean) {
-	isFocus.value = value;
+function closeSheet() {
+	isOpen.value = false
+}
+
+function onSelect(option: OptionType) {
+	if (!option?.value) return
+	emits('update:modelValue', option.value)
+	emits('select', option)
+	closeSheet()
 }
 </script>
 
 <style lang="scss" scoped>
 .field-select {
 	width: 100%;
-	position: relative;
+
+	.field-title {
+		font-size: var(--s14);
+		font-weight: 500;
+		margin-bottom: 8px;
+		display: block;
+	}
+
+	.select-trigger {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		width: 100%;
+		height: 56px;
+		padding: 0 16px;
+		border: 1px solid var(--gray100);
+		background-color: #fff;
+		text-align: left;
+		cursor: pointer;
+
+		span {
+			flex: 1;
+			min-width: 0;
+			font-size: var(--s14);
+			font-weight: 400;
+			color: var(--gray800);
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+
+			&.placeholder {
+				color: var(--gray400);
+			}
+		}
+
+		.chevron {
+			flex-shrink: 0;
+			width: 24px;
+			height: 24px;
+			margin-left: 8px;
+			background-image: url('~/assets/img/ic_arrow.svg');
+			background-size: 24px;
+			background-position: center;
+			transition: transform 0.2s ease;
+		}
+
+		&:disabled {
+			opacity: 0.5;
+			cursor: not-allowed;
+		}
+	}
+
+	&.is-open .select-trigger .chevron {
+		transform: rotate(180deg);
+	}
+
+	~ .field {
+		margin-top: 15px;
+	}
 }
 </style>
