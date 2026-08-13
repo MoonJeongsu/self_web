@@ -1,30 +1,38 @@
 <template>
 	<div class="field field-select" :class="{ 'is-open': isOpen, 'is-value': !!modelValue }">
 		<label class="field-title" v-if="title">{{ title }}</label>
-		<button
-			type="button"
+		<div
 			class="select-trigger"
-			:disabled="disabled"
+			:class="{ disabled }"
 			@click="openSheet"
 		>
-			<span :class="{ placeholder: !displayText }">
-				{{ displayText || formatPlaceholder }}
-			</span>
-			<i class="chevron" aria-hidden="true" />
-		</button>
-
-		<ModalOffcanvas
-			:id="sheetId"
-			:title="title"
-			:show="isOpen"
-			@hide="closeSheet"
-		>
-			<FormOptions
-				:modelValue="modelValue"
-				:options="options"
-				@select="onSelect"
+			<input
+				type="text"
+				readonly
+				tabindex="0"
+				:value="displayText"
+				:placeholder="placeholderText"
+				:disabled="disabled"
+				@focus="openSheet"
 			/>
-		</ModalOffcanvas>
+			<span class="chevron" aria-hidden="true" />
+		</div>
+
+		<Teleport to="body">
+			<ModalOffcanvas
+				v-if="mounted"
+				:id="sheetId"
+				:title="title"
+				:show="isOpen"
+				@hide="closeSheet"
+			>
+				<FormOptions
+					:modelValue="modelValue"
+					:options="options"
+					@select="onSelect"
+				/>
+			</ModalOffcanvas>
+		</Teleport>
 	</div>
 </template>
 
@@ -68,15 +76,15 @@ const props = defineProps({
 const emits = defineEmits(['update:modelValue', 'select'])
 
 const isOpen = ref(false)
-const uid = useId()
-const sheetId = computed(() => `form-select-${uid}`)
+const mounted = ref(false)
+const sheetId = `form-select-${Math.random().toString(36).slice(2, 10)}`
 
 const displayText = computed(() => {
 	const found = props.options.find((option) => option.value === props.modelValue)
 	return found?.text || ''
 })
 
-const formatPlaceholder = computed(() => {
+const placeholderText = computed(() => {
 	if (props.placeholder) {
 		return props.placeholder
 	}
@@ -88,7 +96,10 @@ const formatPlaceholder = computed(() => {
 
 function openSheet() {
 	if (props.disabled) return
-	isOpen.value = true
+	mounted.value = true
+	nextTick(() => {
+		isOpen.value = true
+	})
 }
 
 function closeSheet() {
@@ -117,42 +128,52 @@ function onSelect(option: OptionType) {
 	.select-trigger {
 		display: flex;
 		align-items: center;
-		justify-content: space-between;
 		width: 100%;
 		height: 56px;
 		padding: 0 16px;
 		border: 1px solid var(--gray100);
 		background-color: #fff;
-		text-align: left;
 		cursor: pointer;
 
-		span {
+		input {
 			flex: 1;
 			min-width: 0;
+			width: 100%;
+			height: 100%;
+			border: 0;
+			outline: 0;
+			background: transparent;
 			font-size: var(--s14);
 			font-weight: 400;
 			color: var(--gray800);
-			overflow: hidden;
-			text-overflow: ellipsis;
-			white-space: nowrap;
+			caret-color: transparent;
+			cursor: pointer;
 
-			&.placeholder {
+			&::placeholder {
 				color: var(--gray400);
+				font-weight: 400;
+				opacity: 1;
+			}
+
+			&:disabled {
+				cursor: not-allowed;
 			}
 		}
 
 		.chevron {
 			flex-shrink: 0;
+			display: block;
 			width: 24px;
 			height: 24px;
 			margin-left: 8px;
 			background-image: url('~/assets/img/ic_arrow.svg');
+			background-repeat: no-repeat;
 			background-size: 24px;
 			background-position: center;
 			transition: transform 0.2s ease;
 		}
 
-		&:disabled {
+		&.disabled {
 			opacity: 0.5;
 			cursor: not-allowed;
 		}
