@@ -56,6 +56,7 @@
 				@click="showLogout"
 			/>
 		</div>
+		<p v-if="appVersion" class="app-version">앱 버전 {{ appVersion }}</p>
 		<!--동거인 등록 여부 확인 모달-->
 		<Modal
 			title="동거인을 등록할까요?"
@@ -148,8 +149,10 @@ import {
 	normalizeMember,
 	normalizeProfileUser,
 } from '~/utils/profile'
+import { getAppVersion } from '~/utils/nativeBridge'
 
 const toast = useAppToast()
+const appVersion = ref('')
 
 const state = ref({
 	genders: [
@@ -208,6 +211,7 @@ const memberVaccinatedDateValidation = ref({ status: '', text: '접종 정보를
 const isShowModalLogout = ref(false)
 
 onMounted(async () => {
+	appVersion.value = getAppVersion()
 	await getProfile()
 	await getMembers()
 })
@@ -398,6 +402,13 @@ async function logout() {
             .common-list {
                 margin-top: 15px;
             }
+        }
+        .app-version {
+            margin: 16px 20px 24px;
+            text-align: center;
+            font-size: var(--s12);
+            font-weight: 400;
+            color: var(--gray500);
         }
         .notice-box {
             background-color: #ECF7FD;
