@@ -33,7 +33,7 @@
 		<div class="box">
 			<h6 class="title">알림설정</h6>
 			<CommonList
-				:list="[{ title: '진단 알림<span>매일 12시 미진단시 알람을 보내드립니다.</span>' }]"
+				:list="[{ title: '진단 알림<span>매일 12시 진단 권유 알림을 보내드립니다.</span>' }]"
 			>
 				<FormSwitch v-model="isNotice" />
 			</CommonList>
