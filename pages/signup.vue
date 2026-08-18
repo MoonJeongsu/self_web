@@ -478,12 +478,13 @@ async function onValidateStep2() {
 .signup {
 	position: relative;
 	:deep(> .page-content) {
-		height: calc(100vh - 74px);
+		height: calc(100vh - 74px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
 		.forms {
-			min-height: calc(100vh - 207px);
+			min-height: calc(100vh - 207px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
 			display: flex;
 			flex-direction: column;
 			padding-top: 20px;
+			padding-bottom: env(safe-area-inset-bottom, 0px);
 			.inner {
 				flex: 1;
 			}
@@ -634,7 +635,7 @@ async function onValidateStep2() {
 		}
 		.common-button {
 			position: absolute;
-			bottom: 26px;
+			bottom: calc(26px + env(safe-area-inset-bottom, 0px));
 			left: 20px;
 			width: calc(100% - 40px);
 		}

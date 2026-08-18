@@ -72,7 +72,7 @@ function onStart() {
 		}
 	}
 	:deep(.banners) {
-		padding: 48px 20px 26px;
+		padding: calc(48px + env(safe-area-inset-top, 0px)) 20px calc(26px + env(safe-area-inset-bottom, 0px));
 		height: 100vh;
 		position: relative;
 		.slide1 {
@@ -83,7 +83,7 @@ function onStart() {
 		}
 		.common-button {
 			position: absolute;
-			bottom: 26px;
+			bottom: calc(26px + env(safe-area-inset-bottom, 0px));
 			left: 20px;
 			width:calc(100% - 40px);
 		}

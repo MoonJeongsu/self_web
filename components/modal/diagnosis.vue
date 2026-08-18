@@ -1,6 +1,6 @@
 <template>
 	<Container 
-		:class="['diagnosis', { 'step5-fit': active.order === 5 && !isComplete }]"
+		:class="['diagnosis', { 'step5-fit': active.order === 5 && !isComplete, 'is-complete': isComplete }]"
 		isBack
 		:title="active.title"
 		:desc="active.desc"
@@ -726,8 +726,11 @@ function nextDetailStep(order: number) {
 <style lang="scss" scoped>
 .diagnosis {
 	z-index: 1199;
+	&.is-complete {
+		z-index: 10050 !important;
+	}
 	:deep(> .page-content) {
-		height: calc(100vh - 74px);
+		height: calc(100vh - 74px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
 		.forms:has(.inner) {
 			min-height: calc(100vh - 180px);
 			display: flex;
@@ -763,7 +766,7 @@ function nextDetailStep(order: number) {
 	}
 	&.step5-fit {
 		:deep(> .page-content) {
-			height: calc(100vh - 48px - env(safe-area-inset-bottom, 0px));
+			height: calc(100vh - 48px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
 			overflow: hidden;
 			display: flex;
 			flex-direction: column;
@@ -829,6 +832,7 @@ function nextDetailStep(order: number) {
 		width: calc(100% - 40px);
 		position: absolute;
 		bottom: calc(26px + env(safe-area-inset-bottom, 0px));
+		z-index: 10051;
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
@@ -888,7 +892,7 @@ function nextDetailStep(order: number) {
 		height: 100vh;
 		z-index: 10;
 		background-color: white;
-		padding: 68px 20px 0;
+		padding: calc(68px + env(safe-area-inset-top, 0px)) 20px 0;
 		.title {
 			margin-bottom: 27px;
 			h4 {

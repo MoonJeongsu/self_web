@@ -133,6 +133,7 @@ function goBack() {
 	.page-header {
 		width: 100%;
 		height: 48px;
+		margin-top: env(safe-area-inset-top, 0px);
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -154,7 +155,7 @@ function goBack() {
 		}
 	}
 	.page-content {
-		height: calc(100vh - 102px);
+		height: calc(100vh - 102px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
 		overflow-y: auto;
 		h4.title {
 			font-size: var(--s18);
@@ -178,6 +179,9 @@ function goBack() {
 	.page-footer {
 		display: flex;
 		gap: 0 8px;
+		&:has(.common-button) {
+			padding-bottom: env(safe-area-inset-bottom, 0px);
+		}
 	}
 }
 </style>
