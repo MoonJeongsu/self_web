@@ -13,7 +13,7 @@
 				:active="active.order"
 			/>
 		</template>
-		<div class="content">
+		<div class="content" v-if="!isComplete">
 			<div class="forms step1" v-if="active.order === 1">
 				<CommonCard
 					v-for="(item, index) in members"
