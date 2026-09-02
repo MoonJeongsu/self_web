@@ -15,6 +15,7 @@ const options = {
 		{ text: '세종대', value: '세종대' },
 		{ text: '순천향대', value: '순천향대' },
 		{ text: '한신대', value: '한신대' },
+		{ text: 'GFID', value: 'GFID' },
 		{ text: '기타', value: '기타' },
 	],
 	//근무형태
