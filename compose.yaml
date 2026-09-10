@@ -1,0 +1,30 @@
+name: self-web
+
+services:
+  mobile-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NUXT_PUBLIC_API_BASE_URL: "${NUXT_PUBLIC_API_BASE_URL:-http://localhost:8080}"
+    image: self-web:latest
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-80}:3000"
+    environment:
+      NUXT_PUBLIC_API_BASE_URL: "${NUXT_PUBLIC_API_BASE_URL:-http://localhost:8080}"
+      NODE_OPTIONS: "${NODE_OPTIONS:---max-old-space-size=160}"
+      TZ: Asia/Seoul
+    init: true
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - --quiet
+        - --tries=1
+        - --spider
+        - http://127.0.0.1:3000/
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s

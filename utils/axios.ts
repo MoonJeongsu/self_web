@@ -1,43 +1,43 @@
-// utils/axios.ts
-import axios, { AxiosError } from 'axios';
+import axios, { AxiosError, type AxiosInstance } from 'axios';
 
-export const api = axios.create({
-	baseURL: 'http://43.201.9.18:8082/smart-jaga-api',
-	timeout: 15000,
-	headers: {
-		'Content-Type': 'application/json'
-	}
-});
+export function createApiClient(): AxiosInstance {
+	const runtimeConfig = useRuntimeConfig();
+	const api = axios.create({
+		baseURL: String(runtimeConfig.public.apiBaseUrl),
+		timeout: 15000,
+		headers: {
+			'Content-Type': 'application/json'
+		}
+	});
 
-api.interceptors.request.use((config) => {
-	const token = localStorage.getItem("accessToken")
-	if (token) {
-	  config.headers.Authorization = `Bearer ${token}`;
-	}
-	return config;
-});
+	api.interceptors.request.use((config) => {
+		if (import.meta.client) {
+			const token = localStorage.getItem('accessToken');
+			if (token) {
+				config.headers.Authorization = `Bearer ${token}`;
+			}
+		}
+		return config;
+	});
 
-//응답 공통 에러 처리
-api.interceptors.response.use(
-	// 성공 
-	(response) => {
-		const data = response.data;
-	  
-		if (data?.result === 'ERROR') {
-			// 서버 응답이 있지만 API 레벨 에러일 때
-			return Promise.reject({
-				type: 'api-error',
-				message: data.msg || 'API 오류 발생',
-				response: data
-			});
-		} 
-		return response;
-	},
-	// 실패 
-	(error: AxiosError) => {
-		console.log("ER2", error)
-		// 네트워크 또는 서버 오류
-		return Promise.reject(error);
-	}
-);
-  
+	api.interceptors.response.use(
+		(response) => {
+			const data = response.data;
+
+			if (data?.result === 'ERROR') {
+				return Promise.reject({
+					type: 'api-error',
+					message: data.msg || 'API 오류 발생',
+					response: data
+				});
+			}
+			return response;
+		},
+		(error: AxiosError) => {
+			console.log("ER2", error)
+			return Promise.reject(error);
+		}
+	);
+
+	return api;
+}

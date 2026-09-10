@@ -1,4 +1,4 @@
-import { api } from '@/utils/axios';
+import { createApiClient } from '@/utils/axios';
 import { formatApiError } from '@/utils/apiError';
 
 type ApiMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
@@ -28,6 +28,7 @@ export async function useApi<TResponse = any, TRequest = any>(
 				headers['Content-Type'] = undefined
 			}
 
+			const api = createApiClient();
 			const response = await api.request<TResponse>({
 				url,
 				method: options.method || 'GET',
