@@ -3,6 +3,7 @@ const PUBLIC_AUTH_PATHS = [
 	'/v1/user/signup',
 	'/v1/user/id/check',
 	'/v1/user/id/find',
+	'/v1/user/password/reset',
 	'/v1/admin/login',
 ]
 
@@ -24,7 +25,7 @@ export function isPublicAuthRequest(method?: string, url?: string): boolean {
 
 export function isAuthPagePath(path?: string): boolean {
 	const current = path || (import.meta.client ? window.location.pathname : '')
-	return current.startsWith('/login') || current.startsWith('/signup') || current.startsWith('/find-id')
+	return current.startsWith('/login') || current.startsWith('/signup') || current.startsWith('/find-id') || current.startsWith('/find-password')
 }
 
 export function clearAuthSession() {

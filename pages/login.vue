@@ -26,7 +26,7 @@
 			
 			<div class="btns">
 				<button @click="goFindId">아이디찾기</button>
-				<button>비밀번호 찾기</button>
+				<button @click="goFindPassword">비밀번호 찾기</button>
 				<button @click="goSignUp">회원가입</button>
 			</div>
 			<CommonButton
@@ -93,6 +93,10 @@ async function onSubmit() {
 
 function goFindId() {
 	navigateTo('/find-id')
+}
+
+function goFindPassword() {
+	navigateTo('/find-password')
 }
 
 //회원가입으로 이동

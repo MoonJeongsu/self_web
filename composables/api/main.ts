@@ -64,6 +64,20 @@ export namespace mainApi {
 		return data
 	}
 
+	export async function resetPassword(body: {
+		loginId: string
+		name: string
+		birthDate: string
+		password: string
+	}) {
+		const { data, error } = await useApi('/v1/user/password/reset', {
+			method: 'POST',
+			data: body,
+		})
+		if (error) throw error
+		return data
+	}
+
 	export async function updateFcm(form: Object) {
 		const { data, error } = await useApi('/v1/user/fcm', {
 			method: 'POST',
