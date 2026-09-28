@@ -2,6 +2,9 @@
 	<Container
 		class="login"
 	>
+		<template #page-title>
+			<p v-if="appVersion" class="app-version">앱 버전 {{ appVersion }}</p>
+		</template>
 		<div class="logo">
 			<div class="txt">
 				<h6>대 국민 건강체크는</h6>
@@ -43,6 +46,9 @@
 
 <script setup>
 import { mainApi } from '~/composables/api/main';
+import { getAppVersion } from '~/utils/nativeBridge'
+
+const appVersion = ref('')
 const state = ref({
 	passwordValidation: { 
 		text: '아이디 또는 비밀번호가 일치하지 않습니다.', 
@@ -57,6 +63,10 @@ const forms = ref({
 })
 //로그인 버튼 클릭 시 loading 버튼 1초 노출
 const isLoading = ref(false);
+
+onMounted(() => {
+	appVersion.value = getAppVersion()
+})
 
 async function onSubmit() {
 	try {
@@ -84,6 +94,18 @@ function goSignUp() {
 
 <style lang="scss" scoped>
 .login {
+	:deep(.page-header) {
+		.app-version {
+			position: absolute;
+			right: 0;
+			top: 50%;
+			transform: translateY(-50%);
+			margin: 0;
+			font-size: var(--s12);
+			font-weight: 400;
+			color: var(--gray500);
+		}
+	}
 	:deep(.logo) {
 		display: flex;
 		align-items: center;
