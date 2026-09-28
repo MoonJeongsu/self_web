@@ -15,14 +15,9 @@ export async function useApi<TResponse = any, TRequest = any>(
 		options: UseApiOptions<TRequest> = {}
 	): Promise<{ data: TResponse | null; error: any }> {
 		try {
-			const accessToken = import.meta.client
-				? localStorage.getItem('accessToken')
-				: null
-
 			const isFormData = typeof FormData !== 'undefined' && options.data instanceof FormData
 			const headers: Record<string, string | undefined> = {
 				...(options.headers || {}),
-				Authorization: accessToken ? `Bearer ${accessToken}` : undefined,
 			}
 			if (isFormData) {
 				headers['Content-Type'] = undefined
