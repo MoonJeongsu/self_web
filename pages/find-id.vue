@@ -50,8 +50,19 @@ const forms = ref({
 })
 const state = ref({
 	nameValidation: { text: '이름을 입력해 주세요.', status: '' },
-	birthValidation: { text: '8자리 생년월일을 입력해 주세요.', status: '' },
+	birthValidation: { text: '숫자 8자리 생년월일을 입력해 주세요. 예) 20000101', status: '' },
 })
+
+function isValidCompactBirthDate(value) {
+	if (!/^\d{8}$/.test(value)) return false
+	const year = Number(value.slice(0, 4))
+	const month = Number(value.slice(4, 6))
+	const day = Number(value.slice(6, 8))
+	const date = new Date(year, month - 1, day)
+	return date.getFullYear() === year
+		&& date.getMonth() === month - 1
+		&& date.getDate() === day
+}
 
 async function onSubmit() {
 	let valid = true
@@ -62,7 +73,7 @@ async function onSubmit() {
 		valid = false
 	}
 
-	if (forms.value.birthDate.length === 8) {
+	if (isValidCompactBirthDate(forms.value.birthDate)) {
 		state.value.birthValidation.status = ''
 	} else {
 		state.value.birthValidation.status = 'error'
