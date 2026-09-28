@@ -17,17 +17,22 @@
 import { onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { mainApi } from '~/composables/api/main'
+import { isAuthPagePath } from '~/utils/authSession'
 
 const route = useRoute()
+const skipFcmPaths = ['/intro', '/authority', '/splash']
+
+function shouldSkipFcmUpdate(path: string) {
+	return skipFcmPaths.includes(path) || isAuthPagePath(path)
+}
 
 onMounted(async () => {
-    const allowList = ['/intro', '/authority', '/splash', '/signup']
 	const fcmToken = (window.AndroidBridge && AndroidBridge.getFcmToken())
 	            ? AndroidBridge.getFcmToken() : '';
 	
 	try {
-		if (!allowList.includes(route.path)) {
-			const res = await mainApi.updateFcm({fcmToken});
+		if (!shouldSkipFcmUpdate(route.path)) {
+			await mainApi.updateFcm({fcmToken});
 		}
 	} catch(e) {
 		console.log(e)
@@ -35,15 +40,13 @@ onMounted(async () => {
 	}
 })
 
-watch(() => route.path, async (val) => {
-  // 예외 경로 목록
-	const allowList = ['/intro', '/authority', '/splash', '/signup']
+watch(() => route.path, async (path) => {
 	const fcmToken = (window.AndroidBridge && AndroidBridge.getFcmToken())
 	            ? AndroidBridge.getFcmToken() : '';
 	
 	try {
-		if (!allowList.includes(route.path)) {
-			const res = await mainApi.updateFcm({fcmToken});
+		if (!shouldSkipFcmUpdate(path)) {
+			await mainApi.updateFcm({fcmToken});
 		}
 	} catch(e) {
 		console.log(e)
