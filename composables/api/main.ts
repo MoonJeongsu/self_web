@@ -55,6 +55,15 @@ export namespace mainApi {
 		return data
 	}
 
+	export async function findLoginId(body: { name: string; birthDate: string }) {
+		const { data, error } = await useApi('/v1/user/id/find', {
+			method: 'POST',
+			data: body,
+		})
+		if (error) throw error
+		return data
+	}
+
 	export async function updateFcm(form: Object) {
 		const { data, error } = await useApi('/v1/user/fcm', {
 			method: 'POST',

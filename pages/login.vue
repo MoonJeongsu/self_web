@@ -25,7 +25,7 @@
 			/>
 			
 			<div class="btns">
-				<button>아이디찾기</button>
+				<button @click="goFindId">아이디찾기</button>
 				<button>비밀번호 찾기</button>
 				<button @click="goSignUp">회원가입</button>
 			</div>
@@ -49,6 +49,7 @@ import { mainApi } from '~/composables/api/main';
 import { getAppVersion } from '~/utils/nativeBridge'
 
 const appVersion = ref('')
+const route = useRoute()
 const state = ref({
 	passwordValidation: { 
 		text: '아이디 또는 비밀번호가 일치하지 않습니다.', 
@@ -66,6 +67,10 @@ const isLoading = ref(false);
 
 onMounted(() => {
 	appVersion.value = getAppVersion()
+	const presetLoginId = route.query.loginId
+	if (typeof presetLoginId === 'string' && presetLoginId) {
+		forms.value.loginId = presetLoginId
+	}
 })
 
 async function onSubmit() {
@@ -84,6 +89,10 @@ async function onSubmit() {
 	} catch(e) {
 		state.value.passwordValidation.status = 'error'
 	}
+}
+
+function goFindId() {
+	navigateTo('/find-id')
 }
 
 //회원가입으로 이동
