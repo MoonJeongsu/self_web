@@ -25,8 +25,8 @@
 			/>
 			
 			<div class="btns">
-				<button @click="goFindId">아이디찾기</button>
-				<button @click="goFindPassword">비밀번호 찾기</button>
+				<button v-if="showAccountFind" @click="goFindId">아이디찾기</button>
+				<button v-if="showAccountFind" @click="goFindPassword">비밀번호 찾기</button>
 				<button @click="goSignUp">회원가입</button>
 			</div>
 			<CommonButton
@@ -50,6 +50,7 @@ import { getAppVersion } from '~/utils/nativeBridge'
 
 const appVersion = ref('')
 const route = useRoute()
+const showAccountFind = false
 const state = ref({
 	passwordValidation: { 
 		text: '아이디 또는 비밀번호가 일치하지 않습니다.', 
@@ -137,11 +138,12 @@ function goSignUp() {
 	:deep(.btns) {
 		display: flex;
 		align-items: center;
-		justify-content: space-evenly;
+		justify-content: center;
 		margin-top: 24px;
 		button {
 			position: relative;
-			width: calc(100% / 3);
+			width: auto;
+			padding: 0 16px;
 			height: 24px;
 			text-align: center;
 			font-size: var(--s14);
