@@ -50,7 +50,10 @@ import { getAppVersion } from '~/utils/nativeBridge'
 
 const appVersion = ref('')
 const route = useRoute()
-const showAccountFind = useRuntimeConfig().public.showAccountFind
+const showAccountFind = computed(() => {
+	const value = useRuntimeConfig().public.showAccountFind
+	return value === true || value === 'true'
+})
 const state = ref({
 	passwordValidation: { 
 		text: '아이디 또는 비밀번호가 일치하지 않습니다.', 

@@ -7,14 +7,14 @@ services:
       dockerfile: Dockerfile
       args:
         NUXT_PUBLIC_API_BASE_URL: "${NUXT_PUBLIC_API_BASE_URL:-http://localhost:8080}"
-        NUXT_PUBLIC_SHOW_ACCOUNT_FIND: "${NUXT_PUBLIC_SHOW_ACCOUNT_FIND:-false}"
+        NUXT_PUBLIC_SHOW_ACCOUNT_FIND: "${NUXT_PUBLIC_SHOW_ACCOUNT_FIND:-true}"
     image: self-web:latest
     restart: unless-stopped
     ports:
       - "${WEB_PORT:-80}:3000"
     environment:
       NUXT_PUBLIC_API_BASE_URL: "${NUXT_PUBLIC_API_BASE_URL:-http://localhost:8080}"
-      NUXT_PUBLIC_SHOW_ACCOUNT_FIND: "${NUXT_PUBLIC_SHOW_ACCOUNT_FIND:-false}"
+      NUXT_PUBLIC_SHOW_ACCOUNT_FIND: "${NUXT_PUBLIC_SHOW_ACCOUNT_FIND:-true}"
       NODE_OPTIONS: "${NODE_OPTIONS:---max-old-space-size=160}"
       TZ: Asia/Seoul
     init: true
