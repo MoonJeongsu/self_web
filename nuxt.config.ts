@@ -5,6 +5,7 @@ export default defineNuxtConfig({
 	runtimeConfig: {
 		public: {
 			apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL || 'http://43.201.9.18:8082/smart-jaga-api',
+			showAccountFind: process.env.NUXT_PUBLIC_SHOW_ACCOUNT_FIND === 'true',
 		},
 	},
 	ignoreOptions: {

@@ -50,7 +50,7 @@ import { getAppVersion } from '~/utils/nativeBridge'
 
 const appVersion = ref('')
 const route = useRoute()
-const showAccountFind = false
+const showAccountFind = useRuntimeConfig().public.showAccountFind
 const state = ref({
 	passwordValidation: { 
 		text: '아이디 또는 비밀번호가 일치하지 않습니다.', 
@@ -138,12 +138,11 @@ function goSignUp() {
 	:deep(.btns) {
 		display: flex;
 		align-items: center;
-		justify-content: center;
+		justify-content: space-evenly;
 		margin-top: 24px;
 		button {
 			position: relative;
-			width: auto;
-			padding: 0 16px;
+			width: calc(100% / 3);
 			height: 24px;
 			text-align: center;
 			font-size: var(--s14);
