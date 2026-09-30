@@ -369,17 +369,21 @@ async function onValidStep1() {
 	}
 
 	const passwordReg = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,20}$/;
+	const passwordGuide = state.value.passwordValidation.text
+	const passwordMismatchGuide = '입력하신 비밀번호와 일치하지 않습니다.'
 	if(passwordReg.test(forms.value.password)) {
 		state.value.passwordValidation.status = 'success'
+		state.value.passwordConfirmValidation.text = passwordMismatchGuide
+		if(forms.value.passwordConfirm && forms.value.password === forms.value.passwordConfirm) {
+			state.value.passwordConfirmValidation.status = 'success'
+		} else {
+			state.value.passwordConfirmValidation.status = 'error'
+			result = false;
+		}
 	} else {
 		state.value.passwordValidation.status = 'error'
-		result = false;
-	}
-
-	if(forms.value.passwordConfirm && forms.value.password === forms.value.passwordConfirm) {
-		state.value.passwordConfirmValidation.status = 'success'
-	} else {
 		state.value.passwordConfirmValidation.status = 'error'
+		state.value.passwordConfirmValidation.text = passwordGuide
 		result = false;
 	}
 
