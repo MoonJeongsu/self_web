@@ -34,15 +34,8 @@
 				/>
 				<div class="btns">
 					<CommonButton
-						text="증상 없음"
-						color="gray"
-						size="xl"
-						@click="onStep2(4)"
-					/>
-					<CommonButton
 						text="다음"
-						size="sm"
-						@click="onStep2(2)"
+						@click="onStep2"
 					/>
 				</div>
 			</div>
@@ -211,6 +204,7 @@ const toast = useAppToast()
 
 /** 백엔드 /kit API 연동 */
 const SKIP_KIT_UPLOAD = false
+const SYMPTOM_NONE_KEY = 'SYMPTOM_NONE'
 
 const { recordDiagnosis, hasDiagnosisOnDate } = useAttendanceMock()
 const { saveKitUpload } = useKitUploadMock()
@@ -292,6 +286,7 @@ const state = ref({
 		{ title: '발열', key: 'CONDITION_FEVER' },
 		{ title: '기침', key: 'CONDITION_COUGH' },
 		{ title: '인후통', key: 'CONDITION_THROAT' },
+		{ title: '증상없음', key: SYMPTOM_NONE_KEY },
 	],
 	//백신 여부
 	inoculations: [
@@ -466,15 +461,41 @@ function restartDiagnosis() {
 
 //STEP2: 증상 선택 
 function selectSymptom(key: string) {
-	const symptoms = forms.value.currentCondition;
-    const index = symptoms.indexOf(key);
-    if (index === -1) {
-        // key가 없으면 추가
-        symptoms.push(key);
-    } else {
-        // 이미 있으면 제거
-        symptoms.splice(index, 1);
-    }
+	const symptoms = forms.value.currentCondition
+	if (key === SYMPTOM_NONE_KEY) {
+		forms.value.currentCondition = symptoms.includes(SYMPTOM_NONE_KEY)
+			? []
+			: [SYMPTOM_NONE_KEY]
+		return
+	}
+	const withoutNone = symptoms.filter(item => item !== SYMPTOM_NONE_KEY)
+	const index = withoutNone.indexOf(key)
+	if (index === -1) {
+		withoutNone.push(key)
+	} else {
+		withoutNone.splice(index, 1)
+	}
+	forms.value.currentCondition = withoutNone
+}
+
+function submitNoSymptomDiagnosis() {
+	onComplete({
+		currentCondition: [],
+		vaccineStatus: {
+			temperature: 36.5,
+			isVaccinated: true,
+			vaccinatedDate: dayjs().format('YYYY-MM-DD')
+		},
+		answer: [
+			{ value: 0 },
+			{ value: 0 },
+			{ value: 0 },
+			{ value: 0 },
+			{ value: 0 },
+		]
+	})
+	state.value.diagnosisResult = `자가진단 결과 현재 <span class="green">정상</span>입니다.<br>외출 시 항상 마스크 착용을 권고드리며 건강 관리에 유의해주세요.`
+	isComplete.value = true
 }
 
 /** 신규 백엔드 6문항 — legacy 7문항 변환 비활성 */
@@ -537,35 +558,20 @@ function formatCompactDate(dateStr: string): string {
 }
 
 //STEP2: 증상 선택 후 다음 단계로 이동
-function onStep2(step: number) {
-	if(forms.value.currentCondition.length === 0 && step !== 4) {
+function onStep2() {
+	const selected = forms.value.currentCondition
+	if (selected.length === 0) {
 		toast.add({
 			title: '증상을 선택해주세요'
 		})
-		return;
+		return
 	}
-	if(step === 2) {
-		state.value.diagnosisResult = `자가진단 결과 현재 <span class="red">건강이상</span>이 의심됩니다.<br><p>가족 또는 지인과의 접촉을 삼가시고 빠른 시일내에 가까운 병원에 방문하시길 권고드립니다.</p>`
-		active.value = state.value.steps[2]
-	} else {
-		onComplete({
-			"currentCondition": [],
-			"vaccineStatus": {
-				"temperature": 36.5,
-				"isVaccinated": true,
-				"vaccinatedDate": dayjs().format('YYYY-MM-DD')
-			},
-			"answer": [
-				{ "value": 0 },
-				{ "value": 0 },
-				{ "value": 0 },
-				{ "value": 0 },
-				{ "value": 0 },
-			]
-		})
-		state.value.diagnosisResult = `자가진단 결과 현재 <span class="green">정상</span>입니다.<br>외출 시 항상 마스크 착용을 권고드리며 건강 관리에 유의해주세요.`
-		isComplete.value = true;
+	if (selected.includes(SYMPTOM_NONE_KEY)) {
+		submitNoSymptomDiagnosis()
+		return
 	}
+	state.value.diagnosisResult = `자가진단 결과 현재 <span class="red">건강이상</span>이 의심됩니다.<br><p>가족 또는 지인과의 접촉을 삼가시고 빠른 시일내에 가까운 병원에 방문하시길 권고드립니다.</p>`
+	active.value = state.value.steps[2]
 }
 
 //STEP3: 접종 정보 유효성 검사 
