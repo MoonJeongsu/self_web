@@ -15,6 +15,8 @@ export type SignupRequestType = {
 	workType: string;
 	address?: string;
 	addressDetail?: string;
+	isVaccinated?: boolean;
+	vaccinations?: { name: string; date: string }[];
 }
 
 //유저 정보 (폼·프로필)
@@ -24,6 +26,7 @@ export type UserInfoType = SignupRequestType & {
 	addressDetail?: string;
 	isVaccinated?: boolean;
 	vaccinatedDate?: string;
+	vaccinations?: { name: string; date: string }[];
 }
 
 //로그인·프로필 조회 응답
@@ -48,8 +51,14 @@ export type MemberInfoType = {
 	birthDate: string;
 	gender: string;
 	isComplete: string;
+	isOwner?: boolean;
 	isVaccinated?: boolean;
 	vaccinatedDate?: string;
+	vaccinations?: { name: string; date: string }[];
+	vaccinationText?: string;
+	title?: string;
+	desc?: string;
+	img?: string;
 }
 
 //params
@@ -62,7 +71,7 @@ export type ParamsType = {
 export type TestInfoType = {
 	currentCondition: string[];
 	vaccineStatus: {
-		temperature: number;
+		temperature: number | string | null;
 		isVaccinated: boolean;
 		vaccinatedDate: string;
 		vaccinationMemo?: string;

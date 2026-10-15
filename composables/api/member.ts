@@ -15,13 +15,30 @@ export namespace memberApi {
 		return unwrapped ?? data;
 	}
 	//동거인 등록
-	export async function addMembers(body: MemberInfoType) {
+	export async function addMembers(body: Partial<MemberInfoType> & {
+		name: string
+		birthDate: string
+		gender: string
+		isVaccinated?: boolean
+		vaccinations?: { name: string; date: string }[]
+	}) {
 		const { data, error } = await useApi('/v1/user/member/add', {
 			method: 'POST',
 			data: body
 		});
 		if (error) throw error;
 		return data;
+	}
+	export async function addVaccination(
+		memberId: string | number,
+		body: { name: string; date: string }
+	) {
+		const { data, error } = await useApi(`/v1/user/member/${memberId}/vaccination`, {
+			method: 'POST',
+			data: body,
+		})
+		if (error) throw error
+		return data
 	}
 	//동거인 삭제
 	export async function deleteMember(id: string) {

@@ -1,4 +1,5 @@
 import type { ProfileUserType, MemberInfoType } from '~/types'
+import { parseVaccinations } from '~/utils/vaccination'
 import dayjs from 'dayjs'
 
 function pickField(obj: Record<string, unknown>, keys: string[]): unknown {
@@ -57,8 +58,11 @@ export function normalizeMember(raw: unknown): MemberInfoType {
 		birthDate: formatBirthDate(birthRaw),
 		gender: String(pickField(obj, ['gender', 'sex']) ?? ''),
 		isComplete: String(pickField(obj, ['isComplete', 'is_complete']) ?? ''),
-		isVaccinated: obj.isVaccinated as boolean | undefined,
+		isOwner: obj.isOwner === true || obj.isOwner === 1 || obj.isOwner === '1',
+		isVaccinated: obj.isVaccinated === true || obj.isVaccinated === 1 || obj.isVaccinated === '1',
 		vaccinatedDate: obj.vaccinatedDate as string | undefined,
+		vaccinations: parseVaccinations(obj.vaccinations),
+		vaccinationText: String(pickField(obj, ['vaccinationText']) ?? ''),
 	}
 }
 

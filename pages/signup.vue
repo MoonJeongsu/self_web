@@ -82,24 +82,13 @@
 					<div class="validate-block">
 						<p :class="state.workTypeValidation.status">{{ state.workTypeValidation.text }}</p>
 					</div>
-					<CommonList
-						type="radio"
-						:list="options.inoculations"
-						:active="forms.isVaccinated"
-						@click="onSelectVaccination"
+					<FormVaccinations
+						:is-vaccinated="forms.isVaccinated !== false"
+						:vaccinations="forms.vaccinations"
+						:error="state.vaccinatedDateValidation.status === 'error' ? state.vaccinatedDateValidation.text : ''"
+						@update:is-vaccinated="onSelectVaccination"
+						@update:vaccinations="value => forms.vaccinations = value"
 					/>
-					<div v-if="forms.isVaccinated === true" class="field-textarea">
-						<label class="field-title">백신접종 정보 입력</label>
-						<textarea
-							v-model="forms.vaccinatedDate"
-							placeholder="예시) 인플루엔자 백신 3가, 4가 2025.11.1 접종&#10;예시)RSV 백신 2026.08.01 접종"
-						/>
-						<div class="validate">
-							<p :class="state.vaccinatedDateValidation.status">
-								{{ state.vaccinatedDateValidation.text }}
-							</p>
-						</div>
-					</div>
 				</div>
 				<CommonButton
 					text="확인"
@@ -127,24 +116,13 @@
 						:active="memberForms.gender"
 						@click="key => memberForms.gender = key"
 					/>
-					<CommonList
-						type="radio"
-						:list="options.inoculations"
-						:active="memberForms.isVaccinated"
-						@click="onSelectMemberVaccination"
+					<FormVaccinations
+						:is-vaccinated="memberForms.isVaccinated !== false"
+						:vaccinations="memberForms.vaccinations"
+						:error="state.memberVaccinatedDateValidation.status === 'error' ? state.memberVaccinatedDateValidation.text : ''"
+						@update:is-vaccinated="onSelectMemberVaccination"
+						@update:vaccinations="value => memberForms.vaccinations = value"
 					/>
-					<div v-if="memberForms.isVaccinated === true" class="field-textarea">
-						<label class="field-title">백신접종 정보 입력</label>
-						<textarea
-							v-model="memberForms.vaccinatedDate"
-							placeholder="예시) 인플루엔자 백신 3가, 4가 2025.11.1 접종&#10;예시)RSV 백신 2026.08.01 접종"
-						/>
-						<div class="validate">
-							<p :class="state.memberVaccinatedDateValidation.status">
-								{{ state.memberVaccinatedDateValidation.text }}
-							</p>
-						</div>
-					</div>
 				</div>
 				<div class="btns">
 					<CommonButton
@@ -195,6 +173,7 @@ import type { UserInfoType } from '~/types'
 import { mainApi } from '~/composables/api/main'
 import options from '~/utils/options'
 import { memberApi } from '~/composables/api/member'
+import { emptyVaccination, toVaccinationPayload, validVaccinations } from '~/utils/vaccination'
 
 /** 백엔드 연동 전 프론트 UI·기능 테스트용 (연동 시 false로 변경) */
 const FRONTEND_ONLY = false
@@ -231,14 +210,14 @@ const forms = ref<UserInfoType>({
 	workplace: '',
 	workType: '',
 	isVaccinated: true,
-	vaccinatedDate: '',
+	vaccinations: [emptyVaccination()],
 })
 const memberForms = ref({
 	name: '',
 	birthDate: '',
 	gender: '',
 	isVaccinated: true,
-	vaccinatedDate: '',
+	vaccinations: [emptyVaccination()],
 })
 //회원가입한 유저 정보. 동거인 등록 시에는 해당 정보로 로그인 후, 등록 가능
 const signupInfo = ref({})
@@ -268,7 +247,7 @@ function onSelectWorkType(option: { text: string; value: string }) {
 function onSelectVaccination(key: boolean) {
 	forms.value.isVaccinated = key
 	if (!key) {
-		forms.value.vaccinatedDate = ''
+		forms.value.vaccinations = [emptyVaccination()]
 		state.value.vaccinatedDateValidation.status = ''
 	}
 }
@@ -276,7 +255,7 @@ function onSelectVaccination(key: boolean) {
 function onSelectMemberVaccination(key: boolean) {
 	memberForms.value.isVaccinated = key
 	if (!key) {
-		memberForms.value.vaccinatedDate = ''
+		memberForms.value.vaccinations = [emptyVaccination()]
 		state.value.memberVaccinatedDateValidation.status = ''
 	}
 }
@@ -287,7 +266,7 @@ function validateMemberForms(): boolean {
 		toast.add({ title: '성명, 생년월일, 성별을 입력해주세요.' })
 		result = false
 	}
-	if (memberForms.value.isVaccinated === true && !memberForms.value.vaccinatedDate?.trim()) {
+	if (!validVaccinations(memberForms.value.isVaccinated, memberForms.value.vaccinations)) {
 		state.value.memberVaccinatedDateValidation.status = 'error'
 		result = false
 	} else {
@@ -324,7 +303,17 @@ async function onRegistMember() {
 		isShowCompleteMember.value = true;
 		return
 	}
-	const res = await memberApi.addMembers(memberForms.value);
+	const vaccine = toVaccinationPayload(
+		memberForms.value.isVaccinated,
+		memberForms.value.vaccinations
+	)
+	const res = await memberApi.addMembers({
+		name: memberForms.value.name,
+		birthDate: memberForms.value.birthDate,
+		gender: memberForms.value.gender,
+		isVaccinated: vaccine.isVaccinated,
+		vaccinations: vaccine.vaccinations,
+	});
 	if(res) {
 		isShowCompleteMember.value = true;
 	}
@@ -431,13 +420,9 @@ async function onValidateStep2() {
 		result = false;
 	}
 
-	if (forms.value.isVaccinated === true) {
-		if (forms.value.vaccinatedDate?.trim()) {
-			state.value.vaccinatedDateValidation.status = ''
-		} else {
-			state.value.vaccinatedDateValidation.status = 'error'
-			result = false;
-		}
+	if (!validVaccinations(forms.value.isVaccinated, forms.value.vaccinations)) {
+		state.value.vaccinatedDateValidation.status = 'error'
+		result = false;
 	} else {
 		state.value.vaccinatedDateValidation.status = ''
 	}
@@ -454,6 +439,10 @@ async function onValidateStep2() {
 		const birthDate = forms.value.birthDate.length === 8
 			? forms.value.birthDate
 			: forms.value.birthDate.replace(/-/g, '')
+		const vaccine = toVaccinationPayload(
+			forms.value.isVaccinated,
+			forms.value.vaccinations
+		)
 		const res = await mainApi.signup({
 			loginId: forms.value.loginId,
 			password: forms.value.password,
@@ -464,6 +453,8 @@ async function onValidateStep2() {
 			workType: forms.value.workType,
 			address: forms.value.workplace,
 			addressDetail: forms.value.workType,
+			isVaccinated: vaccine.isVaccinated,
+			vaccinations: vaccine.vaccinations,
 		})
 		if(res) {
 			isComplete.value = true;

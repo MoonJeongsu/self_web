@@ -478,24 +478,18 @@ function selectSymptom(key: string) {
 	forms.value.currentCondition = withoutNone
 }
 
-function submitNoSymptomDiagnosis() {
-	onComplete({
+async function submitNoSymptomDiagnosis() {
+	state.value.diagnosisResult = `자가진단 결과 현재 <span class="green">정상</span>입니다.<br>외출 시 항상 마스크 착용을 권고드리며 건강 관리에 유의해주세요.`
+	await onComplete({
 		currentCondition: [],
 		vaccineStatus: {
-			temperature: 36.5,
-			isVaccinated: true,
-			vaccinatedDate: dayjs().format('YYYY-MM-DD')
+			temperature: null,
+			isVaccinated: false,
+			vaccinatedDate: '',
+			vaccinationMemo: ''
 		},
-		answer: [
-			{ value: 0 },
-			{ value: 0 },
-			{ value: 0 },
-			{ value: 0 },
-			{ value: 0 },
-		]
+		answer: []
 	})
-	state.value.diagnosisResult = `자가진단 결과 현재 <span class="green">정상</span>입니다.<br>외출 시 항상 마스크 착용을 권고드리며 건강 관리에 유의해주세요.`
-	isComplete.value = true
 }
 
 /** 신규 백엔드 6문항 — legacy 7문항 변환 비활성 */
@@ -518,6 +512,19 @@ function mapAnswersForLegacyBackend(answers: { value: number | null }[]) {
 }
 
 function prepareSelfTestBody(form: TestInfoType): TestInfoType {
+	if (!form.currentCondition?.length) {
+		return {
+			currentCondition: [],
+			vaccineStatus: {
+				temperature: null,
+				isVaccinated: false,
+				vaccinatedDate: '',
+				vaccinationMemo: ''
+			},
+			answer: []
+		}
+	}
+
 	const body: TestInfoType = {
 		...form,
 		vaccineStatus: { ...form.vaccineStatus },
@@ -567,7 +574,7 @@ function onStep2() {
 		return
 	}
 	if (selected.includes(SYMPTOM_NONE_KEY)) {
-		submitNoSymptomDiagnosis()
+		void submitNoSymptomDiagnosis()
 		return
 	}
 	state.value.diagnosisResult = `자가진단 결과 현재 <span class="red">건강이상</span>이 의심됩니다.<br><p>가족 또는 지인과의 접촉을 삼가시고 빠른 시일내에 가까운 병원에 방문하시길 권고드립니다.</p>`
