@@ -75,6 +75,7 @@ export type TestInfoType = {
 		isVaccinated: boolean;
 		vaccinatedDate: string;
 		vaccinationMemo?: string;
+		vaccinations?: { name: string; date: string }[];
 	};
 	answer: {
         value: number;

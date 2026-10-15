@@ -48,24 +48,13 @@
 						v-model="forms.vaccineStatus.temperature"
 						:validate="state.validateTemperature"
 					/>
-					<CommonList
-						type="radio"
-						:list="state.inoculations"
-						:active="forms.vaccineStatus.isVaccinated"
-						@click="onSelectVaccination"
+					<FormVaccinations
+						:is-vaccinated="forms.vaccineStatus.isVaccinated !== false"
+						:vaccinations="forms.vaccineStatus.vaccinations"
+						:error="state.validateLastInoculation.status === 'error' ? state.validateLastInoculation.text : ''"
+						@update:is-vaccinated="onSelectVaccination"
+						@update:vaccinations="value => forms.vaccineStatus.vaccinations = value"
 					/>
-					<div v-if="forms.vaccineStatus.isVaccinated === true" class="field-textarea">
-						<label class="field-title">백신접종 정보 입력</label>
-						<textarea
-							v-model="forms.vaccineStatus.vaccinatedDate"
-							placeholder="예시) 인플루엔자 백신 3가, 4가 2025.11.1 접종&#10;예시)RSV 백신 2026.08.01 접종"
-						/>
-						<div class="validate">
-							<p :class="state.validateLastInoculation.status">
-								{{ state.validateLastInoculation.text }}
-							</p>
-						</div>
-					</div>
 				</div>
 				<div class="btns">
 					<CommonButton
@@ -184,6 +173,13 @@ import { selfTestApi } from '~/composables/api/selftest'
 import { memberApi } from '~/composables/api/member'
 import { mainApi } from '~/composables/api/main'
 import type {MemberInfoType, TestInfoType} from '~/types'
+import { normalizeMember } from '~/utils/profile'
+import {
+	emptyVaccination,
+	formatVaccinationLine,
+	toVaccinationPayload,
+	validVaccinations,
+} from '~/utils/vaccination'
 // import { getCoordsByAddress } from '@/composables/kakao'
 import { formatApiError } from '@/utils/apiError'
 import { ATTENDANCE_MOCK, DIAGNOSIS_MOCK, KIT_UPLOAD_MOCK } from '~/utils/featureFlags'
@@ -325,7 +321,8 @@ const forms = ref<TestInfoType>({
 	vaccineStatus: {
 		temperature: "",
 		isVaccinated: true,
-		vaccinatedDate: ""
+		vaccinatedDate: "",
+		vaccinations: [emptyVaccination()]
 	},
 	answer: state.value.detailSteps.map(() => ({ value: null }))
 })
@@ -419,7 +416,7 @@ async function getMembers() {
 	}
 
 	const res = await memberApi.getMembers(today)
-	if (res) members.value = res.list
+	if (res?.list) members.value = res.list.map(el => normalizeMember(el))
 }
 
 function afterDiagnosisSaved() {
@@ -443,9 +440,20 @@ function updateDiagnosisTitle() {
 }
 
 //STEP1: 진단 완료한 동거인의 재진단
+function loadMemberVaccinations(item: MemberInfoType) {
+	const vaccine = toVaccinationPayload(item.isVaccinated, item.vaccinations)
+	forms.value.vaccineStatus.isVaccinated = vaccine.isVaccinated || vaccine.vaccinations.length > 0
+	forms.value.vaccineStatus.vaccinations = vaccine.vaccinations.length
+		? vaccine.vaccinations
+		: [emptyVaccination()]
+	forms.value.vaccineStatus.vaccinatedDate = ''
+	state.value.validateLastInoculation.status = ''
+}
+
 function startDiagnosis(item: MemberInfoType) {
 	selected.value = item;
 	kitImage.value = ''
+	loadMemberVaccinations(item)
 	updateDiagnosisTitle()
 	if(item.isComplete === 'Y') {
 		isShowComplete.value = true;
@@ -454,6 +462,7 @@ function startDiagnosis(item: MemberInfoType) {
 	active.value = state.value.steps[1]
 }
 function restartDiagnosis() {
+	loadMemberVaccinations(selected.value)
 	updateDiagnosisTitle()
 	active.value = state.value.steps[1]
 	isShowComplete.value = false;
@@ -536,11 +545,15 @@ function prepareSelfTestBody(form: TestInfoType): TestInfoType {
 	if (!body.vaccineStatus.isVaccinated) {
 		body.vaccineStatus.vaccinatedDate = ''
 		body.vaccineStatus.vaccinationMemo = ''
+		body.vaccineStatus.vaccinations = []
 	} else {
-		const memo = form.vaccineStatus.vaccinatedDate?.trim() || ''
-		body.vaccineStatus.vaccinationMemo = memo
-		body.vaccineStatus.vaccinatedDate = /^\d{8}$/.test(memo)
-			? formatCompactDate(memo)
+		const vaccine = toVaccinationPayload(true, form.vaccineStatus.vaccinations)
+		body.vaccineStatus.vaccinations = vaccine.vaccinations
+		body.vaccineStatus.vaccinationMemo = vaccine.vaccinations
+			.map(item => formatVaccinationLine(item))
+			.join('\n')
+		body.vaccineStatus.vaccinatedDate = vaccine.vaccinations[0]?.date && /^\d{4}-\d{2}-\d{2}$/.test(vaccine.vaccinations[0].date)
+			? vaccine.vaccinations[0].date
 			: ''
 	}
 
@@ -586,6 +599,7 @@ function onSelectVaccination(key: boolean) {
 	forms.value.vaccineStatus.isVaccinated = key
 	if (!key) {
 		forms.value.vaccineStatus.vaccinatedDate = ''
+		forms.value.vaccineStatus.vaccinations = [emptyVaccination()]
 		state.value.validateLastInoculation.status = ''
 	}
 }
@@ -593,13 +607,12 @@ function onSelectVaccination(key: boolean) {
 function onValidateForm() {
 	let result = true;
 
-	if (forms.value.vaccineStatus.isVaccinated === true) {
-		if (forms.value.vaccineStatus.vaccinatedDate?.trim()) {
-			state.value.validateLastInoculation.status = ''
-		} else {
-			state.value.validateLastInoculation.status = 'error'
-			result = false;
-		}
+	if (!validVaccinations(
+		forms.value.vaccineStatus.isVaccinated,
+		forms.value.vaccineStatus.vaccinations
+	)) {
+		state.value.validateLastInoculation.status = 'error'
+		result = false;
 	} else {
 		state.value.validateLastInoculation.status = ''
 	}
