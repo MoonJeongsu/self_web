@@ -75,9 +75,8 @@ export function toVaccinationPayload(
 }
 
 export function formatVaccinationLine(item: VaccinationItem) {
-	const name = item.name ?? ''
-	const date = (item.date ?? '').replace(/-/g, '.')
-	if (!date) return name
-	if (name.includes(date) || name.includes(item.date)) return name
-	return `${name} (${date})`
+	return String(item.name ?? '')
+		.replace(/\(\d{4}[.\-]\d{1,2}(?:[.\-]\d{1,2})?\)/g, '')
+		.replace(/\s+/g, ' ')
+		.trim()
 }
