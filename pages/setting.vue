@@ -17,22 +17,6 @@
 					<p>{{ user.birthDate }}</p>
 				</div>
 			</div>
-			<div v-if="ownerMember" class="vaccine-box">
-				<p class="vaccine-title">접종정보</p>
-				<p
-					v-for="(item, index) in ownerMember.vaccinations"
-					:key="`owner-vac-${index}`"
-					class="vaccine-line"
-				>
-					{{ formatVaccinationLine(item) }}
-				</p>
-				<p v-if="!ownerMember.vaccinations?.length" class="vaccine-line">접종 안함</p>
-				<CommonButton
-					text="접종 추가"
-					color="outline-black"
-					@click="goAddVaccine(ownerMember.id)"
-				/>
-			</div>
 			<h6 class="title">동거인</h6>
 			<CommonButton
 				color="outline-black"
@@ -45,26 +29,6 @@
 				:list="members"
 				noContentTxt="등록된 동거인이 없습니다.<br>상단 버튼을 터치하여 등록해 주세요."
 			/>
-			<div
-				v-for="member in members"
-				:key="`vac-${member.id}`"
-				class="vaccine-box"
-			>
-				<p class="vaccine-title">{{ member.name }} 접종정보</p>
-				<p
-					v-for="(item, index) in member.vaccinations"
-					:key="`${member.id}-${index}`"
-					class="vaccine-line"
-				>
-					{{ formatVaccinationLine(item) }}
-				</p>
-				<p v-if="!member.vaccinations?.length" class="vaccine-line">접종 안함</p>
-				<CommonButton
-					text="접종 추가"
-					color="outline-black"
-					@click="goAddVaccine(member.id)"
-				/>
-			</div>
 		</div>
 		<div class="box">
 			<h6 class="title">알림설정</h6>
@@ -174,11 +138,7 @@ import {
 	normalizeProfileUser,
 } from '~/utils/profile'
 import { getAppVersion } from '~/utils/nativeBridge'
-import {
-	formatVaccinationLine,
-	toVaccinationPayload,
-	validVaccinations,
-} from '~/utils/vaccination'
+import { toVaccinationPayload, validVaccinations } from '~/utils/vaccination'
 
 const toast = useAppToast()
 const appVersion = ref('')
@@ -213,7 +173,6 @@ const account = ref([
 
 // 거주 구성원
 const members = ref<MemberInfoType[]>([])
-const ownerMember = ref<MemberInfoType | null>(null)
 //동거인 등록 여부 확인 모달
 const isShowConfirmAddMember = ref(false)
 //구성원 추가 모달
@@ -309,24 +268,16 @@ async function getMembers() {
 			user.value = mergeProfileWithOwner(user.value, owner)
 		}
 
-		ownerMember.value = owner || null
 		members.value = list
 			.filter(el => !el.isOwner && !isPrimaryUserMember(el, user.value))
 			.map(el => {
-				el.title = el.name;
-				el.desc = formatBirthDate(el.birthDate);
-				el.img = el.gender === 'M' ? iconMan : iconWoman;
-				return el;
-			});
+				const birth = formatBirthDate(el.birthDate)
+				el.title = birth ? `${el.name} (${birth})` : el.name
+				el.desc = ''
+				el.img = el.gender === 'M' ? iconMan : iconWoman
+				return el
+			})
 	}
-}
-
-function goAddVaccine(memberId: string) {
-	if (!memberId) return
-	navigateTo({
-		path: '/vaccine-add',
-		query: { memberId },
-	})
 }
 
 // 동거인 등록: addMember 함수
@@ -448,24 +399,6 @@ async function logout() {
             }
             .common-list {
                 margin-top: 15px;
-            }
-        }
-        .vaccine-box {
-            margin: 0 0 16px;
-            padding: 12px 0 0;
-            .vaccine-title {
-                font-size: var(--s14);
-                font-weight: 500;
-                color: var(--gray700);
-                margin-bottom: 6px;
-            }
-            .vaccine-line {
-                font-size: var(--s14);
-                color: var(--gray700);
-                line-height: 1.5;
-            }
-            .common-button {
-                margin-top: 8px;
             }
         }
         .app-version {
