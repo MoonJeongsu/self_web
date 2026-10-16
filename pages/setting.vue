@@ -27,23 +27,11 @@
 					{{ formatVaccinationLine(item) }}
 				</p>
 				<p v-if="!ownerMember.vaccinations?.length" class="vaccine-line">접종 안함</p>
-				<div class="vaccine-add">
-					<FormInput
-						title="백신 이름"
-						v-model="ownerShot.name"
-						placeholder="예) 코로나 백신"
-					/>
-					<FormInput
-						title="접종일"
-						v-model="ownerShot.date"
-						placeholder="예) 2026.10"
-					/>
-					<CommonButton
-						text="접종 추가"
-						color="outline-black"
-						@click="appendShot(ownerMember.id, ownerShot)"
-					/>
-				</div>
+				<CommonButton
+					text="접종 추가"
+					color="outline-black"
+					@click="goAddVaccine(ownerMember.id)"
+				/>
 			</div>
 			<h6 class="title">동거인</h6>
 			<CommonButton
@@ -71,23 +59,11 @@
 					{{ formatVaccinationLine(item) }}
 				</p>
 				<p v-if="!member.vaccinations?.length" class="vaccine-line">접종 안함</p>
-				<div v-if="memberShots[member.id]" class="vaccine-add">
-					<FormInput
-						title="백신 이름"
-						v-model="memberShots[member.id].name"
-						placeholder="예) 코로나 백신"
-					/>
-					<FormInput
-						title="접종일"
-						v-model="memberShots[member.id].date"
-						placeholder="예) 2026.10"
-					/>
-					<CommonButton
-						text="접종 추가"
-						color="outline-black"
-						@click="appendShot(member.id, memberShots[member.id])"
-					/>
-				</div>
+				<CommonButton
+					text="접종 추가"
+					color="outline-black"
+					@click="goAddVaccine(member.id)"
+				/>
 			</div>
 		</div>
 		<div class="box">
@@ -155,10 +131,9 @@
 				/>
 				<FormVaccinations
 					:is-vaccinated="forms.isVaccinated !== false"
-					:vaccinations="forms.vaccinations"
+					v-model="forms.vaccinatedDate"
 					:error="memberVaccinatedDateValidation.status === 'error' ? memberVaccinatedDateValidation.text : ''"
 					@update:is-vaccinated="onSelectMemberVaccination"
-					@update:vaccinations="value => forms.vaccinations = value"
 				/>
 				<CommonButton
 					text="등록"
@@ -200,11 +175,9 @@ import {
 } from '~/utils/profile'
 import { getAppVersion } from '~/utils/nativeBridge'
 import {
-	emptyVaccination,
 	formatVaccinationLine,
 	toVaccinationPayload,
 	validVaccinations,
-	type VaccinationItem,
 } from '~/utils/vaccination'
 
 const toast = useAppToast()
@@ -241,8 +214,6 @@ const account = ref([
 // 거주 구성원
 const members = ref<MemberInfoType[]>([])
 const ownerMember = ref<MemberInfoType | null>(null)
-const ownerShot = ref({ name: '', date: '' })
-const memberShots = ref<Record<string, { name: string; date: string }>>({})
 //동거인 등록 여부 확인 모달
 const isShowConfirmAddMember = ref(false)
 //구성원 추가 모달
@@ -262,7 +233,7 @@ const forms = ref({
 	birthDate: '',
 	gender: '',
 	isVaccinated: true,
-	vaccinations: [emptyVaccination()] as VaccinationItem[],
+	vaccinatedDate: '',
 })
 const memberVaccinatedDateValidation = ref({ status: '', text: '접종 정보를 입력해주세요.' })
 
@@ -345,41 +316,24 @@ async function getMembers() {
 				el.title = el.name;
 				el.desc = formatBirthDate(el.birthDate);
 				el.img = el.gender === 'M' ? iconMan : iconWoman;
-				if (!memberShots.value[el.id]) {
-					memberShots.value[el.id] = { name: '', date: '' }
-				}
 				return el;
 			});
 	}
 }
 
-async function appendShot(
-	memberId: string,
-	form: { name: string; date: string }
-) {
-	if (!memberId || !form.name.trim() || !form.date.trim()) {
-		toast.add({ title: '백신 이름과 접종일을 입력해주세요.' })
-		return
-	}
-	try {
-		await memberApi.addVaccination(memberId, {
-			name: form.name.trim(),
-			date: form.date.trim(),
-		})
-		form.name = ''
-		form.date = ''
-		await getMembers()
-	}
-	catch (error: any) {
-		toast.add({ title: error?.msg || '접종 정보를 추가하지 못했습니다.' })
-	}
+function goAddVaccine(memberId: string) {
+	if (!memberId) return
+	navigateTo({
+		path: '/vaccine-add',
+		query: { memberId },
+	})
 }
 
 // 동거인 등록: addMember 함수
 function onSelectMemberVaccination(key: boolean) {
 	forms.value.isVaccinated = key
 	if (!key) {
-		forms.value.vaccinations = [emptyVaccination()]
+		forms.value.vaccinatedDate = ''
 		memberVaccinatedDateValidation.value.status = ''
 	}
 }
@@ -389,7 +343,7 @@ function validateMemberForms(): boolean {
 		toast.add({ title: '성명, 생년월일, 성별을 입력해주세요.' })
 		return false
 	}
-	if (!validVaccinations(forms.value.isVaccinated, forms.value.vaccinations)) {
+	if (!validVaccinations(forms.value.isVaccinated, forms.value.vaccinatedDate)) {
 		memberVaccinatedDateValidation.value.status = 'error'
 		return false
 	}
@@ -399,7 +353,7 @@ function validateMemberForms(): boolean {
 
 async function addMember() {
 	if (!validateMemberForms()) return
-	const vaccine = toVaccinationPayload(forms.value.isVaccinated, forms.value.vaccinations)
+	const vaccine = toVaccinationPayload(forms.value.isVaccinated, forms.value.vaccinatedDate)
 	const res = await memberApi.addMembers({
 		name: forms.value.name,
 		birthDate: forms.value.birthDate,
@@ -414,7 +368,7 @@ async function addMember() {
 			birthDate: '',
 			gender: '',
 			isVaccinated: true,
-			vaccinations: [emptyVaccination()],
+			vaccinatedDate: '',
 		};
 		memberVaccinatedDateValidation.value.status = ''
 		isShowAddMember.value = false;
@@ -509,7 +463,7 @@ async function logout() {
                 color: var(--gray700);
                 line-height: 1.5;
             }
-            .vaccine-add {
+            .common-button {
                 margin-top: 8px;
             }
         }

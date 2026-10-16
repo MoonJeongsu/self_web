@@ -16,6 +16,7 @@ export type SignupRequestType = {
 	address?: string;
 	addressDetail?: string;
 	isVaccinated?: boolean;
+	vaccinationMemo?: string;
 	vaccinations?: { name: string; date: string }[];
 }
 

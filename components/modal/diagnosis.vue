@@ -50,10 +50,9 @@
 					/>
 					<FormVaccinations
 						:is-vaccinated="forms.vaccineStatus.isVaccinated !== false"
-						:vaccinations="forms.vaccineStatus.vaccinations"
+						v-model="forms.vaccineStatus.vaccinatedDate"
 						:error="state.validateLastInoculation.status === 'error' ? state.validateLastInoculation.text : ''"
 						@update:is-vaccinated="onSelectVaccination"
-						@update:vaccinations="value => forms.vaccineStatus.vaccinations = value"
 					/>
 				</div>
 				<div class="btns">
@@ -174,12 +173,7 @@ import { memberApi } from '~/composables/api/member'
 import { mainApi } from '~/composables/api/main'
 import type {MemberInfoType, TestInfoType} from '~/types'
 import { normalizeMember } from '~/utils/profile'
-import {
-	emptyVaccination,
-	formatVaccinationLine,
-	toVaccinationPayload,
-	validVaccinations,
-} from '~/utils/vaccination'
+import { toVaccinationPayload, validVaccinations } from '~/utils/vaccination'
 // import { getCoordsByAddress } from '@/composables/kakao'
 import { formatApiError } from '@/utils/apiError'
 import { ATTENDANCE_MOCK, DIAGNOSIS_MOCK, KIT_UPLOAD_MOCK } from '~/utils/featureFlags'
@@ -322,7 +316,6 @@ const forms = ref<TestInfoType>({
 		temperature: "",
 		isVaccinated: true,
 		vaccinatedDate: "",
-		vaccinations: [emptyVaccination()]
 	},
 	answer: state.value.detailSteps.map(() => ({ value: null }))
 })
@@ -440,12 +433,8 @@ function updateDiagnosisTitle() {
 }
 
 //STEP1: 진단 완료한 동거인의 재진단
-function loadMemberVaccinations(item: MemberInfoType) {
-	const vaccine = toVaccinationPayload(item.isVaccinated, item.vaccinations)
-	forms.value.vaccineStatus.isVaccinated = vaccine.isVaccinated || vaccine.vaccinations.length > 0
-	forms.value.vaccineStatus.vaccinations = vaccine.vaccinations.length
-		? vaccine.vaccinations
-		: [emptyVaccination()]
+function resetVaccinationForm() {
+	forms.value.vaccineStatus.isVaccinated = true
 	forms.value.vaccineStatus.vaccinatedDate = ''
 	state.value.validateLastInoculation.status = ''
 }
@@ -453,7 +442,7 @@ function loadMemberVaccinations(item: MemberInfoType) {
 function startDiagnosis(item: MemberInfoType) {
 	selected.value = item;
 	kitImage.value = ''
-	loadMemberVaccinations(item)
+	resetVaccinationForm()
 	updateDiagnosisTitle()
 	if(item.isComplete === 'Y') {
 		isShowComplete.value = true;
@@ -462,7 +451,7 @@ function startDiagnosis(item: MemberInfoType) {
 	active.value = state.value.steps[1]
 }
 function restartDiagnosis() {
-	loadMemberVaccinations(selected.value)
+	resetVaccinationForm()
 	updateDiagnosisTitle()
 	active.value = state.value.steps[1]
 	isShowComplete.value = false;
@@ -547,13 +536,11 @@ function prepareSelfTestBody(form: TestInfoType): TestInfoType {
 		body.vaccineStatus.vaccinationMemo = ''
 		body.vaccineStatus.vaccinations = []
 	} else {
-		const vaccine = toVaccinationPayload(true, form.vaccineStatus.vaccinations)
+		const vaccine = toVaccinationPayload(true, form.vaccineStatus.vaccinatedDate)
 		body.vaccineStatus.vaccinations = vaccine.vaccinations
-		body.vaccineStatus.vaccinationMemo = vaccine.vaccinations
-			.map(item => formatVaccinationLine(item))
-			.join('\n')
-		body.vaccineStatus.vaccinatedDate = vaccine.vaccinations[0]?.date && /^\d{4}-\d{2}-\d{2}$/.test(vaccine.vaccinations[0].date)
-			? vaccine.vaccinations[0].date
+		body.vaccineStatus.vaccinationMemo = vaccine.vaccinationMemo
+		body.vaccineStatus.vaccinatedDate = /^\d{8}$/.test(vaccine.vaccinationMemo)
+			? formatCompactDate(vaccine.vaccinationMemo)
 			: ''
 	}
 
@@ -599,7 +586,6 @@ function onSelectVaccination(key: boolean) {
 	forms.value.vaccineStatus.isVaccinated = key
 	if (!key) {
 		forms.value.vaccineStatus.vaccinatedDate = ''
-		forms.value.vaccineStatus.vaccinations = [emptyVaccination()]
 		state.value.validateLastInoculation.status = ''
 	}
 }
@@ -609,7 +595,7 @@ function onValidateForm() {
 
 	if (!validVaccinations(
 		forms.value.vaccineStatus.isVaccinated,
-		forms.value.vaccineStatus.vaccinations
+		forms.value.vaccineStatus.vaccinatedDate
 	)) {
 		state.value.validateLastInoculation.status = 'error'
 		result = false;

@@ -3,10 +3,6 @@ export type VaccinationItem = {
 	date: string
 }
 
-export function emptyVaccination(): VaccinationItem {
-	return { name: '', date: '' }
-}
-
 export function parseVaccinations(raw: unknown): VaccinationItem[] {
 	let source: unknown = raw
 	if (typeof raw === 'string') {
@@ -32,36 +28,56 @@ export function parseVaccinations(raw: unknown): VaccinationItem[] {
 		.filter((item): item is VaccinationItem => item != null)
 }
 
+export function vaccinationLines(text: string | undefined): string[] {
+	return (text ?? '')
+		.split(/\r?\n/)
+		.map(line => line.trim())
+		.filter(Boolean)
+}
+
 export function validVaccinations(
 	isVaccinated: boolean | undefined,
-	items: VaccinationItem[] | undefined
+	text: string | undefined
 ): boolean {
 	if (isVaccinated !== true) return true
-	return (items ?? []).some(item => item.name.trim() && item.date.trim())
+	return vaccinationLines(text).length > 0
+}
+
+function todayIso(): string {
+	const now = new Date()
+	const year = now.getFullYear()
+	const month = String(now.getMonth() + 1).padStart(2, '0')
+	const day = String(now.getDate()).padStart(2, '0')
+	return `${year}-${month}-${day}`
 }
 
 export function toVaccinationPayload(
 	isVaccinated: boolean | undefined,
-	items: VaccinationItem[] | undefined
+	text: string | undefined
 ) {
 	if (isVaccinated !== true) {
 		return {
 			isVaccinated: false,
 			vaccinations: [] as VaccinationItem[],
+			vaccinationMemo: '',
 		}
 	}
+	const memo = (text ?? '').trim()
+	const date = todayIso()
 	return {
 		isVaccinated: true,
-		vaccinations: (items ?? [])
-			.map(item => ({
-				name: item.name.trim(),
-				date: item.date.trim(),
-			}))
-			.filter(item => item.name && item.date),
+		vaccinationMemo: memo,
+		vaccinations: vaccinationLines(memo).map(line => ({
+			name: line.slice(0, 100),
+			date,
+		})),
 	}
 }
 
 export function formatVaccinationLine(item: VaccinationItem) {
-	const date = item.date.replace(/-/g, '.')
-	return date ? `${item.name} (${date})` : item.name
+	const name = item.name ?? ''
+	const date = (item.date ?? '').replace(/-/g, '.')
+	if (!date) return name
+	if (name.includes(date) || name.includes(item.date)) return name
+	return `${name} (${date})`
 }

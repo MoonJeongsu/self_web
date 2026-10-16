@@ -84,10 +84,9 @@
 					</div>
 					<FormVaccinations
 						:is-vaccinated="forms.isVaccinated !== false"
-						:vaccinations="forms.vaccinations"
+						v-model="forms.vaccinatedDate"
 						:error="state.vaccinatedDateValidation.status === 'error' ? state.vaccinatedDateValidation.text : ''"
 						@update:is-vaccinated="onSelectVaccination"
-						@update:vaccinations="value => forms.vaccinations = value"
 					/>
 				</div>
 				<CommonButton
@@ -118,10 +117,9 @@
 					/>
 					<FormVaccinations
 						:is-vaccinated="memberForms.isVaccinated !== false"
-						:vaccinations="memberForms.vaccinations"
+						v-model="memberForms.vaccinatedDate"
 						:error="state.memberVaccinatedDateValidation.status === 'error' ? state.memberVaccinatedDateValidation.text : ''"
 						@update:is-vaccinated="onSelectMemberVaccination"
-						@update:vaccinations="value => memberForms.vaccinations = value"
 					/>
 				</div>
 				<div class="btns">
@@ -173,7 +171,7 @@ import type { UserInfoType } from '~/types'
 import { mainApi } from '~/composables/api/main'
 import options from '~/utils/options'
 import { memberApi } from '~/composables/api/member'
-import { emptyVaccination, toVaccinationPayload, validVaccinations } from '~/utils/vaccination'
+import { toVaccinationPayload, validVaccinations } from '~/utils/vaccination'
 
 /** 백엔드 연동 전 프론트 UI·기능 테스트용 (연동 시 false로 변경) */
 const FRONTEND_ONLY = false
@@ -210,14 +208,14 @@ const forms = ref<UserInfoType>({
 	workplace: '',
 	workType: '',
 	isVaccinated: true,
-	vaccinations: [emptyVaccination()],
+	vaccinatedDate: '',
 })
 const memberForms = ref({
 	name: '',
 	birthDate: '',
 	gender: '',
 	isVaccinated: true,
-	vaccinations: [emptyVaccination()],
+	vaccinatedDate: '',
 })
 //회원가입한 유저 정보. 동거인 등록 시에는 해당 정보로 로그인 후, 등록 가능
 const signupInfo = ref({})
@@ -247,7 +245,7 @@ function onSelectWorkType(option: { text: string; value: string }) {
 function onSelectVaccination(key: boolean) {
 	forms.value.isVaccinated = key
 	if (!key) {
-		forms.value.vaccinations = [emptyVaccination()]
+		forms.value.vaccinatedDate = ''
 		state.value.vaccinatedDateValidation.status = ''
 	}
 }
@@ -255,7 +253,7 @@ function onSelectVaccination(key: boolean) {
 function onSelectMemberVaccination(key: boolean) {
 	memberForms.value.isVaccinated = key
 	if (!key) {
-		memberForms.value.vaccinations = [emptyVaccination()]
+		memberForms.value.vaccinatedDate = ''
 		state.value.memberVaccinatedDateValidation.status = ''
 	}
 }
@@ -266,7 +264,7 @@ function validateMemberForms(): boolean {
 		toast.add({ title: '성명, 생년월일, 성별을 입력해주세요.' })
 		result = false
 	}
-	if (!validVaccinations(memberForms.value.isVaccinated, memberForms.value.vaccinations)) {
+	if (!validVaccinations(memberForms.value.isVaccinated, memberForms.value.vaccinatedDate)) {
 		state.value.memberVaccinatedDateValidation.status = 'error'
 		result = false
 	} else {
@@ -305,7 +303,7 @@ async function onRegistMember() {
 	}
 	const vaccine = toVaccinationPayload(
 		memberForms.value.isVaccinated,
-		memberForms.value.vaccinations
+		memberForms.value.vaccinatedDate
 	)
 	const res = await memberApi.addMembers({
 		name: memberForms.value.name,
@@ -420,7 +418,7 @@ async function onValidateStep2() {
 		result = false;
 	}
 
-	if (!validVaccinations(forms.value.isVaccinated, forms.value.vaccinations)) {
+	if (!validVaccinations(forms.value.isVaccinated, forms.value.vaccinatedDate)) {
 		state.value.vaccinatedDateValidation.status = 'error'
 		result = false;
 	} else {
@@ -441,7 +439,7 @@ async function onValidateStep2() {
 			: forms.value.birthDate.replace(/-/g, '')
 		const vaccine = toVaccinationPayload(
 			forms.value.isVaccinated,
-			forms.value.vaccinations
+			forms.value.vaccinatedDate
 		)
 		const res = await mainApi.signup({
 			loginId: forms.value.loginId,
@@ -454,6 +452,7 @@ async function onValidateStep2() {
 			address: forms.value.workplace,
 			addressDetail: forms.value.workType,
 			isVaccinated: vaccine.isVaccinated,
+			vaccinationMemo: vaccine.vaccinationMemo,
 			vaccinations: vaccine.vaccinations,
 		})
 		if(res) {
