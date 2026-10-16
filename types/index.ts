@@ -56,6 +56,7 @@ export type MemberInfoType = {
 	isVaccinated?: boolean;
 	vaccinatedDate?: string;
 	vaccinations?: { name: string; date: string }[];
+	vaccinationMemo?: string;
 	vaccinationText?: string;
 	title?: string;
 	desc?: string;

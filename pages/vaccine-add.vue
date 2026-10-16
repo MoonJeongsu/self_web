@@ -9,10 +9,10 @@
 			<div class="forms">
 				<div class="inner">
 					<FormVaccinations
-						:is-vaccinated="forms.isVaccinated !== false"
+						:is-vaccinated="true"
+						disable-unvaccinated
 						v-model="forms.vaccinatedDate"
 						:error="validation.status === 'error' ? validation.text : ''"
-						@update:is-vaccinated="onSelectVaccination"
 					/>
 				</div>
 				<CommonButton
@@ -26,32 +26,42 @@
 
 <script setup lang="ts">
 import { memberApi } from '~/composables/api/member'
-import { toVaccinationPayload, validVaccinations } from '~/utils/vaccination'
+import { normalizeMember } from '~/utils/profile'
+import { addedVaccinationText, existingVaccinationText } from '~/utils/vaccination'
 
 const route = useRoute()
 const toast = useAppToast()
 
+const existingText = ref('')
 const forms = ref({
 	isVaccinated: true,
 	vaccinatedDate: '',
 })
 const validation = ref({ status: '', text: '접종 정보를 입력해주세요.' })
 
-function onSelectVaccination(key: boolean) {
-	forms.value.isVaccinated = key
-	if (!key) {
-		forms.value.vaccinatedDate = ''
-		validation.value.status = ''
+onMounted(async () => {
+	const memberId = String(route.query.memberId ?? '')
+	if (!memberId) return
+	try {
+		const res = await memberApi.getMembers()
+		const member = (res?.list ?? [])
+			.map((el: unknown) => normalizeMember(el))
+			.find((el: { id: string }) => String(el.id) === memberId)
+		existingText.value = existingVaccinationText(member)
+		forms.value.vaccinatedDate = existingText.value
 	}
-}
+	catch (error: any) {
+		toast.add({ title: error?.msg || '접종 정보를 불러오지 못했습니다.' })
+	}
+})
 
 async function onSubmit() {
-	if (forms.value.isVaccinated !== true) {
-		navigateTo('/setting')
-		return
-	}
-	if (!validVaccinations(forms.value.isVaccinated, forms.value.vaccinatedDate)) {
-		validation.value.status = 'error'
+	const { added, error } = addedVaccinationText(
+		existingText.value,
+		forms.value.vaccinatedDate
+	)
+	if (error) {
+		validation.value = { status: 'error', text: error }
 		return
 	}
 	validation.value.status = ''
@@ -62,11 +72,8 @@ async function onSubmit() {
 		return
 	}
 
-	const vaccine = toVaccinationPayload(true, forms.value.vaccinatedDate)
 	try {
-		for (const item of vaccine.vaccinations) {
-			await memberApi.addVaccination(memberId, item)
-		}
+		await memberApi.addVaccination(memberId, { vaccinationMemo: added })
 		await navigateTo('/setting')
 	}
 	catch (error: any) {

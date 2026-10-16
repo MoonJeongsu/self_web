@@ -12,8 +12,8 @@
 				v-for="(item, index) in list"
 				:key="`item${index}`"
 				class="list-item"
-				@click="onClick(item?.key ?? '')"
-				:class="[{active: active === item.key}, {selected: selected.includes(item.key)}]"
+				@click="onClick(item)"
+				:class="[{active: active === item.key}, {selected: selected.includes(item.key)}, {disabled: item.disabled}]"
 			>
 				<div class="left">
 					<img v-if="item.img" :src="item.img"/>
@@ -47,7 +47,8 @@ interface ItemType {
 	title: string,
 	desc?: string,
 	isClick?: boolean,
-	key?: string | boolean
+	key?: string | boolean,
+	disabled?: boolean
 }
 
 const props = defineProps({
@@ -85,9 +86,10 @@ const emits = defineEmits([
 	'click'
 ])
 
-function onClick(key: string) {
-	if(key !== null) {
-		emits('click', key)
+function onClick(item?: ItemType) {
+	if (item?.disabled) return
+	if (item?.key !== null && item?.key !== undefined) {
+		emits('click', item.key)
 	}
 }
 </script>
@@ -155,6 +157,12 @@ function onClick(key: string) {
 					background-color: var(--sub);
 					border-color: var(--active);
 					color: var(--active);
+				}
+				&.disabled {
+					background-color: var(--gray50);
+					color: var(--gray400);
+					border-color: var(--gray100);
+					pointer-events: none;
 				}
 			}
 		}

@@ -2,7 +2,7 @@
 	<div class="form-vaccinations">
 		<CommonList
 			type="radio"
-			:list="options.inoculations"
+			:list="inoculationList"
 			:active="isVaccinated"
 			@click="onSelect"
 		/>
@@ -23,7 +23,7 @@
 <script setup lang="ts">
 import options from '~/utils/options'
 
-defineProps({
+const props = defineProps({
 	isVaccinated: {
 		type: Boolean,
 		default: true,
@@ -36,6 +36,10 @@ defineProps({
 		type: String,
 		default: '',
 	},
+	disableUnvaccinated: {
+		type: Boolean,
+		default: false,
+	},
 })
 
 const emit = defineEmits<{
@@ -43,7 +47,15 @@ const emit = defineEmits<{
 	'update:modelValue': [value: string]
 }>()
 
+const inoculationList = computed(() =>
+	options.inoculations.map(item => ({
+		...item,
+		disabled: props.disableUnvaccinated && item.key === false,
+	}))
+)
+
 function onSelect(key: boolean) {
+	if (props.disableUnvaccinated && key === false) return
 	emit('update:isVaccinated', key)
 	if (!key) {
 		emit('update:modelValue', '')

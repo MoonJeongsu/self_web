@@ -32,7 +32,7 @@ export namespace memberApi {
 	}
 	export async function addVaccination(
 		memberId: string | number,
-		body: { name: string; date: string }
+		body: { vaccinationMemo: string }
 	) {
 		const { data, error } = await useApi(`/v1/user/member/${memberId}/vaccination`, {
 			method: 'POST',

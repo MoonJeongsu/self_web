@@ -64,6 +64,18 @@ export namespace mainApi {
 		return data
 	}
 
+	export async function changePassword(body: {
+		currentPassword: string
+		password: string
+	}) {
+		const { data, error } = await useApi('/v1/user/password', {
+			method: 'POST',
+			data: body,
+		})
+		if (error) throw error
+		return data
+	}
+
 	export async function resetPassword(body: {
 		loginId: string
 		name: string

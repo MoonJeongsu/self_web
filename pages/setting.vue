@@ -16,6 +16,13 @@
 					<p v-if="profileWorkType">{{ profileWorkType }}</p>
 					<p>{{ user.birthDate }}</p>
 				</div>
+				<button
+					type="button"
+					class="btn-edit"
+					@click="goInfoEdit(ownerMemberId, true)"
+				>
+					정보수정
+				</button>
 			</div>
 			<h6 class="title">동거인</h6>
 			<CommonButton
@@ -25,10 +32,36 @@
 				@click="isShowConfirmAddMember = true"
 				:disabled="members.length > 5"
 			/>
-			<CommonList
-				:list="members"
-				noContentTxt="등록된 동거인이 없습니다.<br>상단 버튼을 터치하여 등록해 주세요."
-			/>
+			<div
+				v-if="!members.length"
+				class="no-content"
+			>
+				등록된 동거인이 없습니다.<br>상단 버튼을 터치하여 등록해 주세요.
+			</div>
+			<ul
+				v-else
+				class="member-list"
+			>
+				<li
+					v-for="member in members"
+					:key="member.id"
+				>
+					<div class="left">
+						<img
+							v-if="member.img"
+							:src="member.img"
+						>
+						<p>{{ member.title }}</p>
+					</div>
+					<button
+						type="button"
+						class="btn-edit"
+						@click="goInfoEdit(member.id, false)"
+					>
+						정보수정
+					</button>
+				</li>
+			</ul>
 		</div>
 		<div class="box">
 			<h6 class="title">알림설정</h6>
@@ -173,6 +206,7 @@ const account = ref([
 
 // 거주 구성원
 const members = ref<MemberInfoType[]>([])
+const ownerMemberId = ref('')
 //동거인 등록 여부 확인 모달
 const isShowConfirmAddMember = ref(false)
 //구성원 추가 모달
@@ -266,6 +300,7 @@ async function getMembers() {
 
 		if (owner) {
 			user.value = mergeProfileWithOwner(user.value, owner)
+			ownerMemberId.value = owner.id ? String(owner.id) : ''
 		}
 
 		members.value = list
@@ -278,6 +313,20 @@ async function getMembers() {
 				return el
 			})
 	}
+}
+
+function goInfoEdit(memberId: string, isOwner: boolean) {
+	if (!memberId) {
+		toast.add({ title: '대상을 확인할 수 없습니다.' })
+		return
+	}
+	navigateTo({
+		path: '/info-edit',
+		query: {
+			memberId,
+			owner: isOwner ? '1' : '0',
+		},
+	})
 }
 
 // 동거인 등록: addMember 함수
@@ -363,6 +412,7 @@ async function logout() {
             border-radius: 2px;
             padding: 16px;
             display: flex;
+            align-items: center;
             margin-bottom: 16px;
             .img-box {
                 min-width: 64px;
@@ -378,6 +428,9 @@ async function logout() {
             }
             .txt-box {
                 margin-left: 15px;
+                margin-right: 12px;
+                flex: 1;
+                min-width: 0;
                 b {
                     font-size: var(--s14);
                     font-weight: 500;
@@ -400,6 +453,54 @@ async function logout() {
             .common-list {
                 margin-top: 15px;
             }
+            .no-content {
+                width: 100%;
+                margin-top: 15px;
+                background-color: var(--gray30);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                text-align: center;
+                padding: 14px;
+                font-size: var(--s14);
+                font-weight: 400;
+                color: var(--gray600);
+            }
+            .member-list {
+                margin-top: 15px;
+                display: flex;
+                flex-direction: column;
+                gap: 10px 0;
+                li {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    .left {
+                        display: inline-flex;
+                        align-items: center;
+                        min-width: 0;
+                        img {
+                            margin-right: 8px;
+                        }
+                        p {
+                            font-size: var(--s14);
+                            font-weight: 400;
+                            color: var(--gray600);
+                        }
+                    }
+                }
+            }
+        }
+        .btn-edit {
+            flex-shrink: 0;
+            height: 32px;
+            padding: 0 12px;
+            background-color: var(--active);
+            color: #fff;
+            font-size: var(--s14);
+            font-weight: 500;
+            border: 0;
+            border-radius: 4px;
         }
         .app-version {
             margin: 16px 20px 24px;

@@ -62,6 +62,7 @@ export function normalizeMember(raw: unknown): MemberInfoType {
 		isVaccinated: obj.isVaccinated === true || obj.isVaccinated === 1 || obj.isVaccinated === '1',
 		vaccinatedDate: obj.vaccinatedDate as string | undefined,
 		vaccinations: parseVaccinations(obj.vaccinations),
+		vaccinationMemo: String(pickField(obj, ['vaccinationMemo', 'vaccination_memo']) ?? ''),
 		vaccinationText: String(pickField(obj, ['vaccinationText']) ?? ''),
 	}
 }
