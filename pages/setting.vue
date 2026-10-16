@@ -359,6 +359,7 @@ async function addMember() {
 		birthDate: forms.value.birthDate,
 		gender: forms.value.gender,
 		isVaccinated: vaccine.isVaccinated,
+		vaccinationMemo: vaccine.vaccinationMemo,
 		vaccinations: vaccine.vaccinations,
 	});
 	if(res) {

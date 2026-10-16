@@ -20,6 +20,7 @@ export namespace memberApi {
 		birthDate: string
 		gender: string
 		isVaccinated?: boolean
+		vaccinationMemo?: string
 		vaccinations?: { name: string; date: string }[]
 	}) {
 		const { data, error } = await useApi('/v1/user/member/add', {

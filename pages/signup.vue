@@ -310,6 +310,7 @@ async function onRegistMember() {
 		birthDate: memberForms.value.birthDate,
 		gender: memberForms.value.gender,
 		isVaccinated: vaccine.isVaccinated,
+		vaccinationMemo: vaccine.vaccinationMemo,
 		vaccinations: vaccine.vaccinations,
 	});
 	if(res) {
