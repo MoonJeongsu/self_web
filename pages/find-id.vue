@@ -27,8 +27,10 @@
 			/>
 		</div>
 		<div class="result" v-else>
-			<p class="result-label">회원님의 아이디</p>
-			<p class="result-id">{{ foundLoginId }}</p>
+			<div class="inner">
+				<p class="result-label">회원님의 아이디</p>
+				<p class="result-id">{{ foundLoginId }}</p>
+			</div>
 			<CommonButton
 				text="로그인"
 				@click="goLogin"
@@ -88,7 +90,7 @@ async function onSubmit() {
 			name: forms.value.name.trim(),
 			birthDate: forms.value.birthDate,
 		})
-		const loginId = data?.loginId
+		const loginId = data?.loginId ?? data?.data?.loginId
 		if (!loginId) {
 			toast.add({ title: '일치하는 계정이 없습니다.' })
 			return
@@ -113,7 +115,8 @@ function goLogin() {
 .find-id {
 	:deep(> .page-content) {
 		height: calc(100vh - 74px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
-		.forms {
+		.forms,
+		.result {
 			min-height: calc(100vh - 180px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
 			display: flex;
 			flex-direction: column;
@@ -127,8 +130,8 @@ function goLogin() {
 			}
 		}
 		.result {
-			padding-top: 48px;
 			text-align: center;
+			padding-top: 48px;
 			.result-label {
 				font-size: var(--s14);
 				font-weight: 400;
@@ -139,7 +142,6 @@ function goLogin() {
 				font-size: var(--s20);
 				font-weight: 500;
 				color: var(--gray800);
-				margin-bottom: 48px;
 			}
 		}
 	}
