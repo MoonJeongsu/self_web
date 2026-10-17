@@ -2,10 +2,26 @@
 	<Container
 		class="find-password"
 		isBack
-		title="비밀번호 찾기"
-		desc="가입 시 입력한 계정 정보와<br>새 비밀번호를 입력해 주세요."
+		title="비밀번호 초기화"
 	>
-		<div class="forms">
+		<div
+			v-if="!showSelfReset"
+			class="guide"
+		>
+			<div class="inner">
+				<p>비밀번호 초기화는 기관 담당자를 통해서 가능합니다.</p>
+				<p>기관 담당자를 통해 초기화 요청을 진행하십시오.</p>
+				<p>기관 담당자로부터 초기화된 비밀번호를 전달 받으셨으면 “마이” 메뉴&gt; 정보수정 &gt; 비밀번호 변경에서 비밀번호 변경을 진행하세요.</p>
+			</div>
+			<CommonButton
+				text="확인"
+				@click="goLogin"
+			/>
+		</div>
+		<div
+			v-else
+			class="forms"
+		>
 			<div class="inner">
 				<FormInput
 					title="아이디"
@@ -54,7 +70,12 @@ import { mainApi } from '~/composables/api/main'
 import { useAppToast } from '~/composables/useAppToast'
 
 const toast = useAppToast()
+const showSelfReset = false
 const isSubmitting = ref(false)
+
+function goLogin() {
+	navigateTo('/login')
+}
 const forms = ref({
 	loginId: '',
 	name: '',
@@ -168,6 +189,7 @@ async function onSubmit() {
 .find-password {
 	:deep(> .page-content) {
 		height: calc(100vh - 74px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+		.guide,
 		.forms {
 			min-height: calc(100vh - 180px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
 			display: flex;
@@ -179,6 +201,16 @@ async function onSubmit() {
 			}
 			.common-button {
 				margin-top: auto;
+			}
+		}
+		.guide .inner p {
+			font-size: var(--s16);
+			font-weight: 400;
+			color: var(--gray800);
+			line-height: 1.6;
+			word-break: keep-all;
+			+ p {
+				margin-top: 16px;
 			}
 		}
 	}
