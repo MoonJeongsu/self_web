@@ -26,42 +26,21 @@
 
 <script setup lang="ts">
 import { memberApi } from '~/composables/api/member'
-import { normalizeMember } from '~/utils/profile'
-import { addedVaccinationText, existingVaccinationText } from '~/utils/vaccination'
+import { validVaccinations } from '~/utils/vaccination'
 
 const route = useRoute()
 const toast = useAppToast()
 
-const existingText = ref('')
 const forms = ref({
 	isVaccinated: true,
 	vaccinatedDate: '',
 })
 const validation = ref({ status: '', text: '접종 정보를 입력해주세요.' })
 
-onMounted(async () => {
-	const memberId = String(route.query.memberId ?? '')
-	if (!memberId) return
-	try {
-		const res = await memberApi.getMembers()
-		const member = (res?.list ?? [])
-			.map((el: unknown) => normalizeMember(el))
-			.find((el: { id: string }) => String(el.id) === memberId)
-		existingText.value = existingVaccinationText(member)
-		forms.value.vaccinatedDate = existingText.value
-	}
-	catch (error: any) {
-		toast.add({ title: error?.msg || '접종 정보를 불러오지 못했습니다.' })
-	}
-})
-
 async function onSubmit() {
-	const { added, error } = addedVaccinationText(
-		existingText.value,
-		forms.value.vaccinatedDate
-	)
-	if (error) {
-		validation.value = { status: 'error', text: error }
+	const added = String(forms.value.vaccinatedDate ?? '').trim()
+	if (!validVaccinations(true, added)) {
+		validation.value = { status: 'error', text: '접종 정보를 입력해주세요.' }
 		return
 	}
 	validation.value.status = ''
