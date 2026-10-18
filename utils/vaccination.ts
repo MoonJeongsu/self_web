@@ -104,20 +104,11 @@ export function addedVaccinationText(existing: string, next: string): {
 } {
 	const oldText = (existing ?? '').replace(/\s+$/g, '')
 	const newText = (next ?? '').replace(/\s+$/g, '')
-	if (!oldText.trim()) {
-		const added = newText.trim()
-		return added
-			? { added, error: '' }
-			: { added: '', error: '접종 정보를 입력해주세요.' }
+	if (!newText.trim()) {
+		return { added: '', error: '접종 정보를 입력해주세요.' }
 	}
 	if (newText === oldText) {
-		return { added: '', error: '추가할 접종 정보를 입력해주세요.' }
+		return { added: '', error: '변경된 내용이 없습니다.' }
 	}
-	if (newText.startsWith(oldText)) {
-		const added = newText.slice(oldText.length).replace(/^\s+/g, '')
-		return added
-			? { added, error: '' }
-			: { added: '', error: '추가할 접종 정보를 입력해주세요.' }
-	}
-	return { added: '', error: '기존 접종 정보는 수정할 수 없습니다.' }
+	return { added: newText, error: '' }
 }
