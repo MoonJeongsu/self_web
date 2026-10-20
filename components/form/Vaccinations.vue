@@ -2,6 +2,7 @@
 	<div class="form-vaccinations">
 		<CommonList
 			type="radio"
+			title="백신접종 여부"
 			:list="inoculationList"
 			:active="isVaccinated"
 			@click="onSelect"
@@ -69,6 +70,9 @@ function onInput(event: Event) {
 </script>
 
 <style lang="scss" scoped>
+.form-vaccinations {
+	margin-top: 14px;
+}
 .field-textarea {
 	margin-top: 15px;
 	.field-title {
