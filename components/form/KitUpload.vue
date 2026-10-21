@@ -3,7 +3,7 @@
 		<label class="field-title">진단키트 사진</label>
 		<div class="card">
 			<div
-				v-if="!modelValue"
+				v-if="!images.length"
 				class="upload-zone"
 				@click="openPicker"
 			>
@@ -31,19 +31,38 @@
 						<span class="corner bl" />
 						<span class="corner br" />
 					</div>
-					<img :src="modelValue" alt="진단키트 사진">
-					<button type="button" class="delete" aria-label="삭제" @click="clearImage">×</button>
+					<img :src="images[activeIndex]" :alt="`진단키트 사진 ${activeIndex + 1}`">
+					<button type="button" class="delete" aria-label="삭제" @click="removeAt(activeIndex)">×</button>
+				</div>
+				<div v-if="images.length > 1" class="thumbs">
+					<button
+						v-for="(src, index) in images"
+						:key="`${index}-${src.slice(-24)}`"
+						type="button"
+						:class="{ active: index === activeIndex }"
+						:aria-label="`${index + 1}번째 사진`"
+						@click="activeIndex = index"
+					>
+						<img :src="src" alt="">
+					</button>
 				</div>
 				<p class="guide-note">
 					사진 전체가 보이도록 표시됩니다. 가로로 촬영한 경우 위·아래 여백이 생길 수 있으니,
 					키트 결과가 흐리거나 잘려 보이면 세로로 다시 촬영해 주세요.
 				</p>
-				<button type="button" class="retake" @click="openPicker">다시 촬영하기</button>
+				<p class="count">{{ images.length }}/{{ MAX_PHOTOS }}장</p>
+				<button
+					v-if="canAdd"
+					type="button"
+					class="retake"
+					@click="openPicker"
+				>추가 촬영하기</button>
 			</template>
 		</div>
 		<p class="guide-tips">
 			· 키트 결과선이 선명하게 보이도록 조명을 확인해 주세요.<br>
-			· 가로(옆으로) 촬영 시 화면에서 양옆이 잘려 보일 수 있습니다.
+			· 가로(옆으로) 촬영 시 화면에서 양옆이 잘려 보일 수 있습니다.<br>
+			· 최대 {{ MAX_PHOTOS }}장까지 추가 촬영할 수 있습니다.
 		</p>
 		<input
 			ref="fileInputRef"
@@ -57,28 +76,52 @@
 </template>
 
 <script setup lang="ts">
+const MAX_PHOTOS = 3
+
 const props = defineProps({
 	modelValue: {
-		type: String,
-		default: ''
+		type: Array as PropType<string[]>,
+		default: () => [],
 	},
 	/** 부모 높이에 맞춰 촬영 영역을 축소 (세로 스크롤 방지) */
 	fill: {
 		type: Boolean,
-		default: false
-	}
+		default: false,
+	},
 })
 
-const emits = defineEmits(['update:modelValue'])
+const emits = defineEmits<{
+	'update:modelValue': [value: string[]]
+}>()
 
 const fileInputRef = ref<HTMLInputElement | null>(null)
+const activeIndex = ref(0)
+
+const images = computed(() => props.modelValue ?? [])
+const canAdd = computed(() => images.value.length < MAX_PHOTOS)
+
+watch(
+	images,
+	(next) => {
+		if (!next.length) {
+			activeIndex.value = 0
+			return
+		}
+		if (activeIndex.value > next.length - 1) {
+			activeIndex.value = next.length - 1
+		}
+	},
+	{ immediate: true },
+)
 
 function openPicker() {
+	if (!canAdd.value && images.value.length) return
 	fileInputRef.value?.click()
 }
 
-function clearImage() {
-	emits('update:modelValue', '')
+function removeAt(index: number) {
+	const next = images.value.filter((_, i) => i !== index)
+	emits('update:modelValue', next)
 	if (fileInputRef.value) {
 		fileInputRef.value.value = ''
 	}
@@ -87,15 +130,15 @@ function clearImage() {
 function onFileChange(event: Event) {
 	const input = event.target as HTMLInputElement
 	const file = input.files?.[0]
-	if (!file) return
-
-	if (!file.type.startsWith('image/')) {
-		return
-	}
+	input.value = ''
+	if (!file || !file.type.startsWith('image/')) return
+	if (!canAdd.value) return
 
 	const reader = new FileReader()
 	reader.onload = () => {
-		emits('update:modelValue', reader.result as string)
+		const next = [...images.value, reader.result as string]
+		emits('update:modelValue', next)
+		activeIndex.value = next.length - 1
 	}
 	reader.readAsDataURL(file)
 }
@@ -271,6 +314,33 @@ function onFileChange(event: Event) {
 		}
 	}
 
+	.thumbs {
+		display: flex;
+		gap: 6px;
+		margin-top: 10px;
+
+		button {
+			width: 48px;
+			height: 48px;
+			padding: 0;
+			border: 1px solid transparent;
+			border-radius: 2px;
+			overflow: hidden;
+			background: #fff;
+			cursor: pointer;
+
+			&.active {
+				border-color: #3eb4eb;
+			}
+
+			img {
+				width: 100%;
+				height: 100%;
+				object-fit: cover;
+			}
+		}
+	}
+
 	.guide-note {
 		margin-top: 10px;
 		font-size: var(--s12);
@@ -278,6 +348,13 @@ function onFileChange(event: Event) {
 		color: var(--gray600);
 		line-height: 1.5;
 		word-break: keep-all;
+	}
+
+	.count {
+		margin-top: 8px;
+		font-size: var(--s12);
+		font-weight: 500;
+		color: var(--gray700);
 	}
 
 	.retake {
@@ -366,6 +443,16 @@ function onFileChange(event: Event) {
 		height: auto;
 	}
 
+	.thumbs {
+		flex-shrink: 0;
+		margin-top: 6px;
+
+		button {
+			width: 40px;
+			height: 40px;
+		}
+	}
+
 	.guide-note {
 		flex-shrink: 0;
 		margin-top: 6px;
@@ -376,6 +463,7 @@ function onFileChange(event: Event) {
 		overflow: hidden;
 	}
 
+	.count,
 	.retake {
 		flex-shrink: 0;
 		margin-top: 6px;

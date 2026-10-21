@@ -83,4 +83,5 @@ export type TestInfoType = {
         value: number;
     }[];
 	kitImage?: string;
+	kitImages?: string[];
 }

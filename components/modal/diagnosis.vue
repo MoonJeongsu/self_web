@@ -93,7 +93,7 @@
 			</div>
 			<div class="forms step5" v-else-if="active.order === 5">
 				<div class="inner">
-					<FormKitUpload v-model="kitImage" fill />
+					<FormKitUpload v-model="kitImages" fill />
 				</div>
 				<div class="btns">
 					<CommonButton
@@ -222,7 +222,7 @@ const state = ref({
 		{ order: 2, title: '현재 증상을 알려주세요.', desc: '현재 겪고 있는 증상을 선택해 주세요.<br>증상이 모두 있을 경우 모두 선택해 주세요.'},
 		{ order: 3, title: '접종 정보를 알려주세요.', desc: '현재 체온과 예방 접종 여부를 입력해 주세요.'},
 		{ order: 4, title: '현재 상태를 진단합니다.', desc: ''},
-		{ order: 5, title: '진단키트 결과를 촬영해 주세요.', desc: '사전 배포된 진단키트의 결과를<br>촬영하고 업로드해 주세요.<br>진단키트 사진이 없으면 “등록완료”<br>버튼을 눌러 진단을 완료해주세요.'}
+		{ order: 5, title: '진단키트 결과를 촬영해 주세요.', desc: '사전 배포된 진단키트의 결과를<br>촬영하고 업로드해 주세요.<br>최대 3장까지 추가 촬영할 수 있습니다.<br>진단키트 사진이 없으면 “등록완료”<br>버튼을 눌러 진단을 완료해주세요.'}
 	],
 	detailSteps: [
 		{ 
@@ -329,7 +329,7 @@ const isComplete = ref(false);
 //loading
 const isLoading = ref(false);
 const isShowNotAnswer = ref(false);
-const kitImage = ref('')
+const kitImages = ref<string[]>([])
 
 onMounted(async () => {
 	active.value = state.value.steps[0]
@@ -441,7 +441,7 @@ function resetVaccinationForm() {
 
 function startDiagnosis(item: MemberInfoType) {
 	selected.value = item;
-	kitImage.value = ''
+	kitImages.value = []
 	resetVaccinationForm()
 	updateDiagnosisTitle()
 	if(item.isComplete === 'Y') {
@@ -552,6 +552,7 @@ function prepareSelfTestBody(form: TestInfoType): TestInfoType {
 	}
 
 	delete body.kitImage
+	delete body.kitImages
 
 	return body
 }
@@ -654,16 +655,17 @@ async function onComplete(newForm?: TestInfoType) {
 
 	if (DIAGNOSIS_MOCK) {
 		console.log('[DIAGNOSIS_MOCK] 자가진단+진단키트:', payload)
-		if (KIT_UPLOAD_MOCK && kitImage.value) {
+		if (KIT_UPLOAD_MOCK && kitImages.value.length) {
 			await saveKitUpload({
 				memberId: String(selected.value.id),
 				memberName: selected.value.name,
-				kitImage: kitImage.value,
+				kitImage: kitImages.value[0],
 				testDate: dayjs().format('YYYY-MM-DD'),
 				symptoms: forms.value.currentCondition?.join(', ') || undefined,
 			})
 		}
 		afterDiagnosisSaved()
+		kitImages.value = []
 		setTimeout(() => {
 			isLoading.value = false
 			isComplete.value = true
@@ -673,15 +675,16 @@ async function onComplete(newForm?: TestInfoType) {
 
 	try {
 		const res = await selfTestApi.addSelfTest(payload)
-		if (!SKIP_KIT_UPLOAD && kitImage.value && res.selfTestId) {
+		if (!SKIP_KIT_UPLOAD && kitImages.value.length && res.selfTestId) {
 			await selfTestApi.uploadKitImage({
 				selfTestId: res.selfTestId,
-				kitImage: kitImage.value,
+				kitImages: kitImages.value,
 			})
-		} else if (!SKIP_KIT_UPLOAD && kitImage.value && !res.selfTestId) {
+		} else if (!SKIP_KIT_UPLOAD && kitImages.value.length && !res.selfTestId) {
 			console.warn('[kit] selfTestId 없음 — kit 업로드 생략')
 		}
 		afterDiagnosisSaved()
+		kitImages.value = []
 		setTimeout(() => {
 			isLoading.value = false
 			isComplete.value = true

@@ -11,5 +11,6 @@ export function dataUrlToFile(dataUrl: string, filename = 'kit.jpg'): File {
 		bytes[i] = binary.charCodeAt(i)
 	}
 	const ext = mime.includes('png') ? 'png' : 'jpg'
-	return new File([bytes], filename.includes('.') ? filename : `kit.${ext}`, { type: mime })
+	const stem = (filename || 'kit').replace(/\.[^.]+$/, '') || 'kit'
+	return new File([bytes], `${stem}.${ext}`, { type: mime })
 }
