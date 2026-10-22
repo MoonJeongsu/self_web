@@ -90,7 +90,7 @@
 					/>
 				</div>
 				<CommonButton
-					text="확인"
+					text="다음"
 					@click="onValidateStep2"
 				/>
 			</div>
