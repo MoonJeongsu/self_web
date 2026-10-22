@@ -18,6 +18,8 @@ export type SignupRequestType = {
 	isVaccinated?: boolean;
 	vaccinationMemo?: string;
 	vaccinations?: { name: string; date: string }[];
+	influenzaInfected?: number | null;
+	rsvInfected?: number | null;
 }
 
 //유저 정보 (폼·프로필)

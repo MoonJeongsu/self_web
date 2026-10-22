@@ -22,6 +22,8 @@ export namespace memberApi {
 		isVaccinated?: boolean
 		vaccinationMemo?: string
 		vaccinations?: { name: string; date: string }[]
+		influenzaInfected?: number | null
+		rsvInfected?: number | null
 	}) {
 		const { data, error } = await useApi('/v1/user/member/add', {
 			method: 'POST',

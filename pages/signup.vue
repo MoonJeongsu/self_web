@@ -96,6 +96,32 @@
 			</div>
 			<div class="forms" v-else-if="active.order === 3">
 				<div class="inner">
+					<FormDiseaseQuestion
+						:order="1"
+						question="올해 인플루엔자에 감염된 적이 있나요?"
+						v-model="forms.influenzaInfected"
+					/>
+				</div>
+				<CommonButton
+					text="다음"
+					@click="onValidateFlu"
+				/>
+			</div>
+			<div class="forms" v-else-if="active.order === 4">
+				<div class="inner">
+					<FormDiseaseQuestion
+						:order="2"
+						question="올해 RSV에 감염된 적이 있나요?"
+						v-model="forms.rsvInfected"
+					/>
+				</div>
+				<CommonButton
+					text="완료"
+					@click="submitSignup"
+				/>
+			</div>
+			<div class="forms" v-else-if="active.order === 5">
+				<div class="inner" v-if="memberPhase === 'info'">
 					<div class="notice-box">동거인 등록 시 근무지 보건관리자에게 사전 확인 요망</div>
 					<FormInput
 						title="성명"
@@ -122,17 +148,41 @@
 						@update:is-vaccinated="onSelectMemberVaccination"
 					/>
 				</div>
-				<div class="btns">
+				<div class="inner" v-else-if="memberPhase === 'flu'">
+					<FormDiseaseQuestion
+						:order="1"
+						question="올해 인플루엔자에 감염된 적이 있나요?"
+						v-model="memberForms.influenzaInfected"
+					/>
+				</div>
+				<div class="inner" v-else>
+					<FormDiseaseQuestion
+						:order="2"
+						question="올해 RSV에 감염된 적이 있나요?"
+						v-model="memberForms.rsvInfected"
+					/>
+				</div>
+				<div class="btns" v-if="memberPhase === 'info'">
 					<CommonButton
 						text="등록안함"
 						color="gray"
 						@click="onSkipMember"
 					/>
 					<CommonButton
-						text="등록"
-						@click="onRegistMember"
+						text="다음"
+						@click="onMemberInfoNext"
 					/>
 				</div>
+				<CommonButton
+					v-else-if="memberPhase === 'flu'"
+					text="다음"
+					@click="onMemberFluNext"
+				/>
+				<CommonButton
+					v-else
+					text="등록"
+					@click="onRegistMember"
+				/>
 			</div>
 		</div>
 		<div class="complete" v-if="isComplete">
@@ -191,7 +241,9 @@ const state = ref({
 const steps = ref([
 	{ order: 1, title: '회원가입', desc: '스마트 자가진단을 사용할<br>계정 정보를 입력합니다.'},
 	{ order: 2, title: '회원 정보 등록', desc: '회원 정보는 APP 사용자 통계에만 사용되며<br>그 외 어떠한 용도로도 사용되지 않습니다.'},
-	{ order: 3, title: '동거인 등록', desc: '함께 거주 중인 인원을 등록하여 기기 하나로<br>각자 진단이 가능합니다.'}
+	{ order: 3, title: '관련 질병 정보를 알려주세요.(1)', desc: ''},
+	{ order: 4, title: '관련 질병 정보를 알려주세요.(2)', desc: ''},
+	{ order: 5, title: '동거인 등록', desc: '함께 거주 중인 인원을 등록하여 기기 하나로<br>각자 진단이 가능합니다.'}
 ])
 const active = ref({
 	order: 1,
@@ -209,6 +261,8 @@ const forms = ref<UserInfoType>({
 	workType: '',
 	isVaccinated: true,
 	vaccinatedDate: '',
+	influenzaInfected: null,
+	rsvInfected: null,
 })
 const memberForms = ref({
 	name: '',
@@ -216,7 +270,10 @@ const memberForms = ref({
 	gender: '',
 	isVaccinated: true,
 	vaccinatedDate: '',
+	influenzaInfected: null as number | null,
+	rsvInfected: null as number | null,
 })
+const memberPhase = ref<'info' | 'flu' | 'rsv'>('info')
 //회원가입한 유저 정보. 동거인 등록 시에는 해당 정보로 로그인 후, 등록 가능
 const signupInfo = ref({})
 //toast
@@ -273,27 +330,58 @@ function validateMemberForms(): boolean {
 	return result
 }
 
+function isDiseaseAnswer(value: unknown): value is number {
+	return value === 0 || value === 1 || value === 2
+}
+
 function onSkipMember() {
 	onComplete()
+}
+
+function onMemberInfoNext() {
+	if (!validateMemberForms()) return
+	memberPhase.value = 'flu'
+	active.value = {
+		order: 5,
+		title: '관련 질병 정보를 알려주세요.(1)',
+		desc: '',
+	}
+}
+
+function onMemberFluNext() {
+	if (!isDiseaseAnswer(memberForms.value.influenzaInfected)) {
+		toast.add({ title: '관련 질병 정보를 선택해 주세요.' })
+		return
+	}
+	memberPhase.value = 'rsv'
+	active.value = {
+		order: 5,
+		title: '관련 질병 정보를 알려주세요.(2)',
+		desc: '',
+	}
 }
 
 //동거인 등록 이동 : 로그인 => 동거인 등록
 async function goMemberRegister() {
 	isShowAddMember.value = false;
 	isComplete.value = false;
+	memberPhase.value = 'info'
 	if (FRONTEND_ONLY) {
-		active.value = steps.value[2]
+		active.value = steps.value[4]
 		return
 	}
 	const res = await mainApi.login({loginId: forms.value.loginId, password: forms.value.password})
 	if(res) {
-		active.value = steps.value[2]
+		active.value = steps.value[4]
 	}
 }
 
 //동거인 등록 완료
 async function onRegistMember() {
-	if (!validateMemberForms()) return
+	if (!isDiseaseAnswer(memberForms.value.rsvInfected)) {
+		toast.add({ title: '관련 질병 정보를 선택해 주세요.' })
+		return
+	}
 	isShowAddMember.value = false;
 	isShowCompleteMember.value = false;
 	if (FRONTEND_ONLY) {
@@ -312,6 +400,8 @@ async function onRegistMember() {
 		isVaccinated: vaccine.isVaccinated,
 		vaccinationMemo: vaccine.vaccinationMemo,
 		vaccinations: vaccine.vaccinations,
+		influenzaInfected: memberForms.value.influenzaInfected,
+		rsvInfected: memberForms.value.rsvInfected,
 	});
 	if(res) {
 		isShowCompleteMember.value = true;
@@ -427,6 +517,22 @@ async function onValidateStep2() {
 	}
 
 	if(!result) return;
+	active.value = steps.value[2]
+}
+
+function onValidateFlu() {
+	if (!isDiseaseAnswer(forms.value.influenzaInfected)) {
+		toast.add({ title: '관련 질병 정보를 선택해 주세요.' })
+		return
+	}
+	active.value = steps.value[3]
+}
+
+async function submitSignup() {
+	if (!isDiseaseAnswer(forms.value.rsvInfected)) {
+		toast.add({ title: '관련 질병 정보를 선택해 주세요.' })
+		return
+	}
 
 	if (FRONTEND_ONLY) {
 		console.log('[FRONTEND_ONLY] 회원가입:', forms.value)
@@ -455,6 +561,8 @@ async function onValidateStep2() {
 			isVaccinated: vaccine.isVaccinated,
 			vaccinationMemo: vaccine.vaccinationMemo,
 			vaccinations: vaccine.vaccinations,
+			influenzaInfected: forms.value.influenzaInfected,
+			rsvInfected: forms.value.rsvInfected,
 		})
 		if(res) {
 			isComplete.value = true;

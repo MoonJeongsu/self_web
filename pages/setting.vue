@@ -105,10 +105,10 @@
 			isBottom
 			id="add-member"
 			:show="isShowAddMember"
-			@hide="isShowAddMember = false"
+			@hide="onHideAddMember"
 		>
-			<div class="notice-box">동거인 등록 시 근무지 보건관리자에게 사전 확인 요망</div>
-			<div class="forms">
+			<div v-if="memberPhase === 'info'" class="notice-box">동거인 등록 시 근무지 보건관리자에게 사전 확인 요망</div>
+			<div class="forms" v-if="memberPhase === 'info'">
 				<FormInput
 					title="성명"
 					v-model="forms.name"
@@ -131,6 +131,30 @@
 					v-model="forms.vaccinatedDate"
 					:error="memberVaccinatedDateValidation.status === 'error' ? memberVaccinatedDateValidation.text : ''"
 					@update:is-vaccinated="onSelectMemberVaccination"
+				/>
+				<CommonButton
+					text="다음"
+					@click="onMemberInfoNext"
+				/>
+			</div>
+			<div class="forms" v-else-if="memberPhase === 'flu'">
+				<p class="disease-title">관련 질병 정보를 알려주세요.(1)</p>
+				<FormDiseaseQuestion
+					:order="1"
+					question="올해 인플루엔자에 감염된 적이 있나요?"
+					v-model="forms.influenzaInfected"
+				/>
+				<CommonButton
+					text="다음"
+					@click="onMemberFluNext"
+				/>
+			</div>
+			<div class="forms" v-else>
+				<p class="disease-title">관련 질병 정보를 알려주세요.(2)</p>
+				<FormDiseaseQuestion
+					:order="2"
+					question="올해 RSV에 감염된 적이 있나요?"
+					v-model="forms.rsvInfected"
 				/>
 				<CommonButton
 					text="등록"
@@ -214,7 +238,30 @@ const isShowAddMember = ref(false);
 
 function goMemberRegister() {
 	isShowConfirmAddMember.value = false
+	memberPhase.value = 'info'
 	isShowAddMember.value = true
+}
+
+function onHideAddMember() {
+	isShowAddMember.value = false
+	memberPhase.value = 'info'
+}
+
+function isDiseaseAnswer(value: unknown): value is number {
+	return value === 0 || value === 1 || value === 2
+}
+
+function onMemberInfoNext() {
+	if (!validateMemberForms()) return
+	memberPhase.value = 'flu'
+}
+
+function onMemberFluNext() {
+	if (!isDiseaseAnswer(forms.value.influenzaInfected)) {
+		toast.add({ title: '관련 질병 정보를 선택해 주세요.' })
+		return
+	}
+	memberPhase.value = 'rsv'
 }
 
 // 알림 설정
@@ -227,7 +274,10 @@ const forms = ref({
 	gender: '',
 	isVaccinated: true,
 	vaccinatedDate: '',
+	influenzaInfected: null as number | null,
+	rsvInfected: null as number | null,
 })
+const memberPhase = ref<'info' | 'flu' | 'rsv'>('info')
 const memberVaccinatedDateValidation = ref({ status: '', text: '접종 정보를 입력해주세요.' })
 
 // 모달 : 로그아웃
@@ -352,7 +402,10 @@ function validateMemberForms(): boolean {
 }
 
 async function addMember() {
-	if (!validateMemberForms()) return
+	if (!isDiseaseAnswer(forms.value.rsvInfected)) {
+		toast.add({ title: '관련 질병 정보를 선택해 주세요.' })
+		return
+	}
 	const vaccine = toVaccinationPayload(forms.value.isVaccinated, forms.value.vaccinatedDate)
 	const res = await memberApi.addMembers({
 		name: forms.value.name,
@@ -361,6 +414,8 @@ async function addMember() {
 		isVaccinated: vaccine.isVaccinated,
 		vaccinationMemo: vaccine.vaccinationMemo,
 		vaccinations: vaccine.vaccinations,
+		influenzaInfected: forms.value.influenzaInfected,
+		rsvInfected: forms.value.rsvInfected,
 	});
 	if(res) {
 		await getMembers();
@@ -370,7 +425,10 @@ async function addMember() {
 			gender: '',
 			isVaccinated: true,
 			vaccinatedDate: '',
+			influenzaInfected: null,
+			rsvInfected: null,
 		};
+		memberPhase.value = 'info'
 		memberVaccinatedDateValidation.value.status = ''
 		isShowAddMember.value = false;
 	}
@@ -516,6 +574,12 @@ async function logout() {
             font-weight: 500;
             padding: 12px 16px;
             border-radius: 8px;
+            margin-bottom: 16px;
+        }
+        .disease-title {
+            font-size: var(--s16);
+            font-weight: 500;
+            color: var(--gray800);
             margin-bottom: 16px;
         }
         .field-hint {
