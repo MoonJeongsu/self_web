@@ -16,6 +16,7 @@ const options = {
 		{ text: '서밋', value: '서밋' },
 		{ text: '세종대', value: '세종대' },
 		{ text: '순천향대', value: '순천향대' },
+		{ text: '신성이엔지', value: '신성이엔지' },
 		{ text: '어빌리티', value: '어빌리티' },
 		{ text: '엔투엠', value: '엔투엠' },
 		{ text: '한국동서발전(주) 울산발전본부', value: '한국동서발전(주) 울산발전본부' },
