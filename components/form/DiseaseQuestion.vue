@@ -6,6 +6,7 @@
 			:model-value="modelValue"
 			@update:model-value="emits('update:modelValue', $event)"
 		/>
+		<p v-if="note" class="note">{{ note }}</p>
 	</div>
 </template>
 
@@ -29,6 +30,10 @@ defineProps({
 		type: [Number, String] as PropType<number | string | null>,
 		default: null,
 	},
+	note: {
+		type: String,
+		default: '',
+	},
 })
 
 const emits = defineEmits(['update:modelValue'])
@@ -45,12 +50,21 @@ const emits = defineEmits(['update:modelValue'])
 		font-weight: 500;
 		display: block;
 		color: var(--gray700);
+		word-break: keep-all;
 		:deep(~ .field-radio) {
 			margin-top: 13px;
 		}
 	}
 	:deep(.field-radio) {
 		margin-top: 13px;
+	}
+	.note {
+		margin: 10px 0 0;
+		font-size: var(--s12);
+		font-weight: 400;
+		line-height: 1.5;
+		color: var(--gray600);
+		word-break: keep-all;
 	}
 }
 </style>

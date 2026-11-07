@@ -153,7 +153,8 @@
 				<p class="disease-title">관련 질병 정보를 알려주세요.(2)</p>
 				<FormDiseaseQuestion
 					:order="2"
-					question="올해 RSV에 감염된 적이 있나요?"
+					question="올해 호흡기세포융합바이러스(RSV)에 감염된 적이 있나요?"
+					note="※ 병원 검사(키트/PCR)를 통해 RSV(호흡기세포융합바이러스) 감염으로 진단받은 적이 있다면 '예'를 선택해주세요."
 					v-model="forms.rsvInfected"
 				/>
 				<CommonButton
