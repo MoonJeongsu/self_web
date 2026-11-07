@@ -239,7 +239,7 @@ const state = ref({
 		},
 		{
 			order: 2,
-			title: '급성 호흡기 증상이 있나요? (호흡곤간, 기침 등)',
+			title: '급성 호흡기 증상이 있나요? (호흡곤란, 기침 등)',
 			options: [
 				{ text: '예', value: 0 },
 				{ text: '아니오', value: 1 }
