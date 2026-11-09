@@ -24,9 +24,9 @@ const options = {
 		{ text: '한보총', value: '한보총' },
 		{ text: '한신대', value: '한신대' },
 		{ text: '현대케피코', value: '현대케피코' },
-		{ text: 'CJ헬로비전', value: 'CJ헬로비전' },
 		{ text: 'GFID', value: 'GFID' },
 		{ text: 'KETI', value: 'KETI' },
+		{ text: 'LG헬로비전', value: 'LG헬로비전' },
 		{ text: '기타', value: '기타' },
 	],
 	//근무형태
