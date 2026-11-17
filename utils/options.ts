@@ -28,6 +28,7 @@ const options = {
 		{ text: 'GFID', value: 'GFID' },
 		{ text: 'KETI', value: 'KETI' },
 		{ text: 'LG헬로비전', value: 'LG헬로비전' },
+		{ text: 'SK에코플랜트', value: 'SK에코플랜트' },
 		{ text: '기타', value: '기타' },
 	],
 	//근무형태
