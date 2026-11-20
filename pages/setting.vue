@@ -14,10 +14,7 @@
 					<b>{{ user.name }}</b>
 					<p v-if="profileWorkType">{{ profileWorkType }}</p>
 					<p>{{ user.birthDate }}</p>
-					<p class="workplace">
-						<span>소속기관</span>
-						<strong>{{ profileWorkplace || '-' }}</strong>
-					</p>
+					<p class="workplace">{{ profileWorkplace || '-' }}</p>
 				</div>
 				<button
 					type="button"
@@ -504,23 +501,7 @@ async function logout() {
                     color: var(--gray600);
                 }
                 .workplace {
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 8px;
-                    margin-top: 6px;
-                    padding: 4px 8px;
-                    border: 1px solid var(--gray200);
-                    border-radius: 4px;
-                    background: #f7fcff;
-                    span {
-                        color: var(--gray500);
-                        font-size: var(--s12);
-                    }
-                    strong {
-                        color: var(--gray800);
-                        font-size: var(--s14);
-                        font-weight: 600;
-                    }
+                    overflow-wrap: anywhere;
                 }
             }
         }
