@@ -1,6 +1,6 @@
 import { useApi } from '../useApi'
 import type { ProfileUserType, SignInType, SignupRequestType } from '~/types'
-import { pickToken, pickUserInfo, unwrapApiData } from '~/utils/apiResponse'
+import { pickToken, pickUserInfo } from '~/utils/apiResponse'
 
 function storeSession(token: string, userInfo?: ProfileUserType) {
 	const accessTokenCookie = useCookie('accessToken', {
@@ -117,7 +117,7 @@ async function fetchProfileUser(): Promise<ProfileUserType> {
 	const { data, error } = await useApi('/v1/user')
 	if (error) throw error
 
-	const userInfo = (unwrapApiData<ProfileUserType>(data) ?? pickUserInfo(data)) as ProfileUserType
+	const userInfo = pickUserInfo(data) as ProfileUserType
 	const token = pickToken(data)
 	if (token) {
 		storeSession(token, userInfo)
