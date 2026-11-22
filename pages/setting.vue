@@ -11,10 +11,10 @@
 					<img :src="user.gender === 'woman' ? iconWoman : iconMan">
 				</div>
 				<div class="txt-box">
-					<b>{{ user.name }}</b>
-					<p v-if="profileWorkType">{{ profileWorkType }}</p>
+					<b>{{ profileDisplayName }}</b>
 					<p>{{ user.birthDate }}</p>
 					<p class="workplace">{{ profileWorkplace || '-' }}</p>
+					<p v-if="profileWorkType">{{ profileWorkType }}</p>
 				</div>
 				<button
 					type="button"
@@ -220,6 +220,11 @@ const user = ref<ProfileUserType>({
 
 const profileWorkplace = computed(() => user.value.workplace?.trim() || '')
 const profileWorkType = computed(() => user.value.workType?.trim() || '')
+const profileDisplayName = computed(() => {
+	const name = user.value.name?.trim() || ''
+	const loginId = user.value.login_id?.trim() || ''
+	return loginId ? `${name}(${loginId})` : name
+})
 //계정 리스트
 const account = ref([
 	{
@@ -328,17 +333,13 @@ async function getProfile() {
 			if (!normalized.id && cachedProfile.id) {
 				normalized.id = cachedProfile.id
 			}
+			if (!normalized.login_id && cachedProfile.login_id) {
+				normalized.login_id = cachedProfile.login_id
+			}
 		}
 
 		user.value = normalized
 		isNotice.value = user.value.alarm === 'Y'
-		account.value = [
-			{
-				title: '로그아웃',
-				desc: user.value?.login_id,
-				key: 'logout'
-			}
-		]
 	}
 }
 
